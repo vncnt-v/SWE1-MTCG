@@ -16,30 +16,29 @@ public class PackageTest {
 
     @Test
     public void Package_Size(){
+        List<AbstractCard> cards = new ArrayList<>();
+        cards.add(new Dragon("00000","Blue Dragon",117));
+        cards.add(new FireElf("00001","Old Fire Elf",107));
+        cards.add(new Goblin("00010","Green Goblin",87));
+        cards.add(new Knight("00011","Heavy Knight",120));
+        cards.add(new Kraken("00100","Deep Blue Kraken",140));
+        cards.add(new Ork("00101","White Ork",98));
+        cards.add(new Wizard("00110","Dark Wizard",117));
+        cards.add(new Spell("00111","Blue Wave Spell",89));
+        cards.add(new Spell("01000","Red Fire Spell",100));
+        cards.add(new Spell("01001","Normal Spell",100));
+        cards.add(new Dragon("01010","Red Dragon",123));
+        cards.add(new FireElf("01011","Old Water Elf",106));
+        cards.add(new Goblin("01100","Dark Goblin",102));
+        cards.add(new Knight("01101","Strong Knight",119));
+        cards.add(new Kraken("01110","Deep Black Kraken",143));
+        cards.add(new Ork("01111","Gray Ork",87));
+        cards.add(new Wizard("10000","White Wizard",110));
+        cards.add(new Spell("10001","Deep Ocean Spell",90));
+        cards.add(new Spell("10010","Flame Spell",112));
+        cards.add(new Spell("10011","Normal Magic Spell",100));
 
-        List<AbstractCard> cards1 = new ArrayList<>();
-        cards1.add(new Dragon("Blue Dragon",117, ElementType.water));
-        cards1.add(new FireElf("Old Fire Elf",107,ElementType.fire));
-        cards1.add(new Goblin("Green Goblin",87,ElementType.normal));
-        cards1.add(new Knight("Heavy Knight",120,ElementType.normal));
-        cards1.add(new Kraken("Deep Blue Kraken",140,ElementType.water));
-        cards1.add(new Ork("White Ork",98,ElementType.normal));
-        cards1.add(new Wizard("Dark Wizard",117,ElementType.fire));
-        cards1.add(new Spell("Blue Wave Spell",89, ElementType.water));
-        cards1.add(new Spell("Red Fire Spell",100, ElementType.fire));
-        cards1.add(new Spell("Normal Spell",100, ElementType.normal));
-        cards1.add(new Dragon("Red Dragon",123,ElementType.fire));
-        cards1.add(new FireElf("Old Water Elf",106,ElementType.water));
-        cards1.add(new Goblin("Dark Goblin",102,ElementType.fire));
-        cards1.add(new Knight("Strong Knight",119,ElementType.normal));
-        cards1.add(new Kraken("Deep Black Kraken",143,ElementType.water));
-        cards1.add(new Ork("Gray Ork",87,ElementType.water));
-        cards1.add(new Wizard("White Wizard",110,ElementType.water));
-        cards1.add(new Spell("Deep Ocean Spell",90, ElementType.water));
-        cards1.add(new Spell("Flame Spell",112, ElementType.fire));
-        cards1.add(new Spell("Normal Magic Spell",100, ElementType.normal));
-
-        CardPackage pck = new CardPackage(cards1);
+        CardPackage pck = new CardPackage(cards);
         assertEquals(5,pck.getCards().size());
     }
 }

@@ -1,99 +1,105 @@
 package cards;
 
+import bif3.swe1.mtcg.GameManager;
 import bif3.swe1.mtcg.cards.AbstractCard;
-import bif3.swe1.mtcg.cards.ElementType;
-import bif3.swe1.mtcg.cards.Monsters.*;
-import bif3.swe1.mtcg.cards.Spell;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DamageCalculationTest {
 
+    GameManager manager;
+
+    @BeforeEach
+    void setUp() {
+        manager = new GameManager();
+    }
+
     @Test
     public void Dragon_ability() {
-        AbstractCard card1 = new Dragon("Dragon",50, ElementType.water);
-        AbstractCard card2 = new Goblin("Goblin",100,ElementType.water);
-        int damage = card2.calculateDamage(card1);
+        AbstractCard card1 = manager.createCard("123","WaterDragon",50);
+        AbstractCard card2 = manager.createCard("1234","WaterGoblin",100);
+        float damage = card2.calculateDamage(card1);
         assertEquals(0,damage);
     }
 
     @Test
     public void FireElf_ability() {
-        AbstractCard card1 = new FireElf("FireElf",50, ElementType.water);
-        AbstractCard card2 = new Dragon("Dragon",100,ElementType.water);
-        int damage = card2.calculateDamage(card1);
+        AbstractCard card1 = manager.createCard("123","FireElf",50);
+        AbstractCard card2 = manager.createCard("1234","Dragon",100);
+        float damage = card2.calculateDamage(card1);
         assertEquals(0,damage);
     }
 
     @Test
     public void Knight_ability() {
-        AbstractCard card1 = new Knight("FireElf",50, ElementType.water);
-        AbstractCard card2 = new Spell("Spell",100,ElementType.water);
-        int damage = card1.calculateDamage(card2);
+        AbstractCard card1 = manager.createCard("123","Knight",50);
+        AbstractCard card2 = manager.createCard("1234","WaterSpell",100);
+        float damage = card1.calculateDamage(card2);
         assertEquals(-1,damage);
     }
 
     @Test
     public void Kraken_ability() {
-        AbstractCard card1 = new Kraken("Kraken",50, ElementType.water);
-        AbstractCard card2 = new Spell("Spell",100,ElementType.water);
-        int damage = card2.calculateDamage(card1);
+        AbstractCard card1 = manager.createCard("123","Kraken",50);
+        AbstractCard card2 = manager.createCard("1234","Spell",100);
+        float damage = card2.calculateDamage(card1);
         assertEquals(0,damage);
     }
 
     @Test
     public void Ork_ability() {
-        AbstractCard card1 = new Ork("Ork",50, ElementType.water);
-        AbstractCard card2 = new Wizard("Wizard",100,ElementType.water);
-        int damage = card1.calculateDamage(card2);
+        AbstractCard card1 = manager.createCard("123","Ork",50);
+        AbstractCard card2 = manager.createCard("1234","Wizard",100);
+        float damage = card1.calculateDamage(card2);
         assertEquals(0,damage);
     }
 
     @Test
     public void WaterSpell_ability() {
-        AbstractCard card1 = new Spell("WaterSpell",50, ElementType.water);
-        AbstractCard card2 = new Wizard("FireSpell",50,ElementType.fire);
-        AbstractCard card3 = new Spell("NormalSpell",50, ElementType.normal);
-        int damage1 = card1.calculateDamage(card2);
-        int damage2 = card1.calculateDamage(card3);
+        AbstractCard card1 = manager.createCard("123","WaterSpell",50);
+        AbstractCard card2 = manager.createCard("1234","FireSpell",50);
+        AbstractCard card3 = manager.createCard("12345","NormalSpell",50);
+        float damage1 = card1.calculateDamage(card2);
+        float damage2 = card1.calculateDamage(card3);
 
         assertEquals(100,damage1);
         assertEquals(25,damage2);
     }
     @Test
     public void FireSpell_ability() {
-        AbstractCard card1 = new Spell("FireSpell",50, ElementType.fire);
-        AbstractCard card2 = new Wizard("NormalSpell",50,ElementType.normal);
-        AbstractCard card3 = new Spell("WaterSpell",50, ElementType.water);
-        int damage1 = card1.calculateDamage(card2);
-        int damage2 = card1.calculateDamage(card3);
+        AbstractCard card1 = manager.createCard("123","WaterSpell",50);
+        AbstractCard card2 = manager.createCard("1234","FireSpell",50);
+        AbstractCard card3 = manager.createCard("12345","NormalSpell",50);
+        float damage1 = card1.calculateDamage(card2);
+        float damage2 = card1.calculateDamage(card3);
 
         assertEquals(100,damage1);
         assertEquals(25,damage2);
     }
     @Test
     public void NormalSpell_ability() {
-        AbstractCard card1 = new Spell("NormalSpell",50, ElementType.normal);
-        AbstractCard card2 = new Wizard("WaterSpell",50,ElementType.water);
-        AbstractCard card3 = new Spell("FireSpell",50, ElementType.fire);
-        int damage1 = card1.calculateDamage(card2);
-        int damage2 = card1.calculateDamage(card3);
+        AbstractCard card1 = manager.createCard("123","WaterSpell",50);
+        AbstractCard card2 = manager.createCard("1234","FireSpell",50);
+        AbstractCard card3 = manager.createCard("12345","NormalSpell",50);
+        float damage1 = card1.calculateDamage(card2);
+        float damage2 = card1.calculateDamage(card3);
 
         assertEquals(100,damage1);
         assertEquals(25,damage2);
     }
     @Test
     public void NormalMonsterDamage() {
-        AbstractCard card1 = new Dragon("Dragon",50, ElementType.fire);
-        AbstractCard card2 = new Knight("Knight",50,ElementType.normal);
-        AbstractCard card3 = new Wizard("Wizard",50, ElementType.water);
-        int damage1 = card1.calculateDamage(card2);
-        int damage2 = card1.calculateDamage(card3);
-        int damage3 = card2.calculateDamage(card1);
-        int damage4 = card2.calculateDamage(card3);
-        int damage5 = card3.calculateDamage(card1);
-        int damage6 = card3.calculateDamage(card2);
+        AbstractCard card1 = manager.createCard("123","Dragon",50);
+        AbstractCard card2 = manager.createCard("1234","Knight",50);
+        AbstractCard card3 = manager.createCard("12345","Wizard",50);
+        float damage1 = card1.calculateDamage(card2);
+        float damage2 = card1.calculateDamage(card3);
+        float damage3 = card2.calculateDamage(card1);
+        float damage4 = card2.calculateDamage(card3);
+        float damage5 = card3.calculateDamage(card1);
+        float damage6 = card3.calculateDamage(card2);
 
         assertEquals(50,damage1);
         assertEquals(50,damage2);

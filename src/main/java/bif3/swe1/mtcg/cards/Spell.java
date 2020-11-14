@@ -4,13 +4,13 @@ import bif3.swe1.mtcg.cards.Monsters.Kraken;
 
 public class Spell extends AbstractCard {
 
-    public Spell(String name, int damage, ElementType element) {
-        super(name,damage,element);
+    public Spell(String id,String name, float damage) {
+        super(id,name,damage);
     }
 
     @Override
-    public int calculateDamage(AbstractCard card){
-        int attackDamage = damage;
+    public float calculateDamage(AbstractCard card){
+        float attackDamage = damage;
         if (card instanceof Kraken){
             attackDamage = 0;
         } else if (element == ElementType.water && card.getElement() == ElementType.fire){

@@ -14,7 +14,7 @@ public class Combat {
 
     public void Fight(){
         int turns = 0;
-        if (user1.getDeck().getCards() == null || user2.getDeck().getCards() == null || user1.getDeck().getCards().isEmpty() || user2.getDeck().getCards().isEmpty()) {
+        if (user1.getDeck() == null || user2.getDeck() == null || user1.getDeck().getCards() == null || user2.getDeck().getCards() == null || user1.getDeck().getCards().isEmpty() || user2.getDeck().getCards().isEmpty()) {
             //System.out.println("No cards in one or both decks. Fight canceled");
             user1.RemoveDeck();
             user2.RemoveDeck();
@@ -23,8 +23,8 @@ public class Combat {
         while (!user1.getDeck().getCards().isEmpty() && !user2.getDeck().getCards().isEmpty() && ++turns <= 100){
             AbstractCard card1 = user1.Draw();
             AbstractCard card2 = user2.Draw();
-            int damage1 = card1.calculateDamage(card2);
-            int damage2 = card2.calculateDamage(card1);
+            float damage1 = card1.calculateDamage(card2);
+            float damage2 = card2.calculateDamage(card1);
             //System.out.println("Round: " + turns);
             //System.out.println(card1.getName() + " " + damage1);
             //System.out.println(card2.getName() + " " + damage2);

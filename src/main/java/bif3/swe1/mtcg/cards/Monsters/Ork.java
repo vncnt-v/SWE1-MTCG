@@ -5,13 +5,13 @@ import bif3.swe1.mtcg.cards.ElementType;
 
 public class Ork extends AbstractCard {
 
-    public Ork(String name, int damage, ElementType element) {
-        super(name,damage,element);
+    public Ork(String id, String name, float damage) {
+        super(id,name,damage);
     }
 
     @Override
-    public int calculateDamage(AbstractCard card){
-        int attackDamage = damage;
+    public float calculateDamage(AbstractCard card){
+        float attackDamage = damage;
         if (card instanceof Wizard){
             attackDamage = 0;
         }
