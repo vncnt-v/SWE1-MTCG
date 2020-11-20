@@ -1,21 +1,20 @@
 package bif3.swe1.API;
 
-import bif3.swe1.mtcg.GameManager;
-
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Map;
 
-public class Main {
+public class TcpListener {
     public static void main(String[] args) {
         System.out.println("start server...");
         try {
-            ServerSocket listener = new ServerSocket(8000, 5);
+            ServerSocket listener = new ServerSocket(10001, 5);
             System.out.println("Waiting for clients...");
-            GameManager manager = GameManager.getInstance();
+            System.out.println("");
             while (true) {
                 Socket socket = listener.accept();
-                System.out.println("New client arrived");
+                System.out.println("** New client arrived: **");
                 Thread thread = new Thread(() -> {
                     // Try reader and writer
                     try ( BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream())); BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()))) {
@@ -24,9 +23,19 @@ public class Main {
                         // Unwrap
                         Unwrapper wrapper = new Unwrapper(reader);
                         request = wrapper.unwarp();
+                        // Print Request
+                        if (request != null){
+                            System.out.println("** Header: **");
+                            System.out.println("    " + request.getHttp_verb() + " " + request.getRequested() + " " + request.getHttp_version());
+                            for (Map.Entry<String, String> entry : request.getHeader_values().entrySet()) {
+                                System.out.println("    " + entry.getKey() + " " + entry.getValue());
+                            }
+                            System.out.println("** Body: **");
+                            System.out.println(request.getPayload());
+                        }
                         // Handle response
                         ResponseHandler responder = new ResponseHandler(writer);
-                        responder.response(request,manager);
+                        responder.response(request);
                     } catch (IOException e) {
                         e.printStackTrace();
                     } finally {
@@ -36,7 +45,8 @@ public class Main {
                             e.printStackTrace();
                         }
                     }
-                    System.out.println("Client gone.");
+                    System.out.println("** Client gone. **");
+                    System.out.println("");
                 });
                 thread.start();
             }

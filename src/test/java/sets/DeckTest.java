@@ -2,7 +2,6 @@ package sets;
 
 import bif3.swe1.mtcg.Deck;
 import bif3.swe1.mtcg.cards.AbstractCard;
-import bif3.swe1.mtcg.cards.ElementType;
 import bif3.swe1.mtcg.cards.Monsters.*;
 import bif3.swe1.mtcg.cards.Spell;
 import org.junit.jupiter.api.BeforeEach;

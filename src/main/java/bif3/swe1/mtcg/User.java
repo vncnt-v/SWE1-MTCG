@@ -1,6 +1,7 @@
 package bif3.swe1.mtcg;
 
 import bif3.swe1.mtcg.cards.AbstractCard;
+import lombok.Setter;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -11,6 +12,15 @@ public class User {
     @Getter
     private final String username;
     private final String pwd;
+    @Setter
+    @Getter
+    private String name;
+    @Setter
+    @Getter
+    private String bio;
+    @Setter
+    @Getter
+    private String image;
 
     private int coins;
     @Getter
@@ -29,6 +39,9 @@ public class User {
         this.count_of_games = 0;
         this.count_of_wins = 0;
         this.stack = new Stack();
+        this.name = "";
+        this.bio = "";
+        this.image = "";
     }
 
     public boolean BuyPackage(CardPackage pck){

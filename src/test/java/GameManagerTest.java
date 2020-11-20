@@ -1,10 +1,24 @@
 import bif3.swe1.mtcg.GameManager;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class GameManagerTest {
+
+    @Test
+    public void createOnlyOneInstance(){
+        GameManager manager_1 = GameManager.getInstance();
+        GameManager manager_2 = GameManager.getInstance();
+        GameManager manager_3 = GameManager.getInstance();
+        assertTrue(manager_1.registerUser("admin","123"));
+        assertTrue(manager_2.registerUser("admin2","123"));
+        assertFalse(manager_3.registerUser("admin","1234"));
+        assertTrue(manager_1.deleteUser("admin","123"));
+        assertTrue(manager_1.deleteUser("admin2","123"));
+    }
+
+
     @Test
     void registerUser(){
         GameManager manager = GameManager.getInstance();
