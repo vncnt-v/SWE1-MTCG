@@ -6,13 +6,13 @@ import bif3.swe1.mtcg.cards.Spell;
 
 public class Knight extends AbstractCard {
 
-    public Knight(String name, int damage, ElementType element) {
-        super(name,damage,element);
+    public Knight(String id, String name, float damage) {
+        super(id,name,damage);
     }
 
     @Override
-    public int calculateDamage(AbstractCard card){
-        int attackDamage = damage;
+    public float calculateDamage(AbstractCard card){
+        float attackDamage = damage;
         if (card instanceof Spell && card.getElement() == ElementType.water){
             attackDamage = -1;
         }

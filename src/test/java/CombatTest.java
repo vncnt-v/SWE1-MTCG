@@ -1,10 +1,9 @@
+import bif3.swe1.mtcg.CardPackage;
 import bif3.swe1.mtcg.Combat;
-import bif3.swe1.mtcg.Stack;
 import bif3.swe1.mtcg.User;
 import bif3.swe1.mtcg.cards.AbstractCard;
 import bif3.swe1.mtcg.cards.Monsters.*;
 import bif3.swe1.mtcg.cards.Spell;
-import bif3.swe1.mtcg.cards.ElementType;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -12,24 +11,28 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CombatTest {
 
     @Test
     public void combat_system_winner() {
-        List<AbstractCard> cards1 = new ArrayList<>();
-        List<AbstractCard> cards2 = new ArrayList<>();
-        cards1.add(new Dragon("Blue Dragon",117,ElementType.water));
-        cards2.add(new Dragon("Blue Dragon",120,ElementType.water));
-        // Create Stack
-        Stack stack1 = new Stack(cards1);
-        Stack stack2 = new Stack(cards2);
         // Create User
-        User user1 = new User("admin","admin",stack1,0,0);
-        User user2 = new User("admin","admin",stack2,0,0);
+        User user1 = new User("admin","admin");
+        User user2 = new User("admin","admin");
+        // Add Cards
+        user1.getStack().AddCard(new Dragon("00001","Blue Dragon",117));
+        user1.getStack().AddCard(new Dragon("00010","Blue Dragon",117));
+        user1.getStack().AddCard(new Dragon("00011","Blue Dragon",117));
+        user1.getStack().AddCard(new Dragon("00100","Blue Dragon",117));
+        user2.getStack().AddCard(new Dragon("00110","Blue Dragon",120));
+        user2.getStack().AddCard(new Dragon("00111","Blue Dragon",120));
+        user2.getStack().AddCard(new Dragon("01000","Blue Dragon",120));
+        user2.getStack().AddCard(new Dragon("01001","Blue Dragon",120));
         // Create Random Deck
-        user1.CreateRandomDeck();
-        user2.CreateRandomDeck();
+        assertTrue(user1.CreateRandomDeck());
+        assertTrue(user2.CreateRandomDeck());
         // Fight
         Combat combat = new Combat(user1,user2);
         combat.Fight();
@@ -40,25 +43,27 @@ public class CombatTest {
     }
     @Test
     public void combat_system_no_winner() {
-        List<AbstractCard> cards1 = new ArrayList<>();
-        List<AbstractCard> cards2 = new ArrayList<>();
-        cards1.add(new Dragon("Blue Dragon",117,ElementType.water));
-        cards2.add(new Dragon("Blue Dragon",117,ElementType.water));
-        // Create Stack
-        Stack stack1 = new Stack(cards1);
-        Stack stack2 = new Stack(cards2);
         // Create User
-        User user1 = new User("admin","admin",stack1,0,0);
-        User user2 = new User("admin","admin",stack2,0,0);
+        User user1 = new User("admin","admin");
+        User user2 = new User("admin","admin");
+        // Add Cards
+        user1.getStack().AddCard(new Dragon("0001","Blue Dragon",117));
+        user1.getStack().AddCard(new Dragon("0001","Blue Dragon",117));
+        user1.getStack().AddCard(new Dragon("0001","Blue Dragon",117));
+        user1.getStack().AddCard(new Dragon("0001","Blue Dragon",117));
+        user2.getStack().AddCard(new Dragon("0010","Blue Dragon",117));
+        user2.getStack().AddCard(new Dragon("0010","Blue Dragon",117));
+        user2.getStack().AddCard(new Dragon("0010","Blue Dragon",117));
+        user2.getStack().AddCard(new Dragon("0010","Blue Dragon",117));
         // Create Random Deck
-        assertEquals(1,user1.getStack().getCards().size());
-        assertEquals(1,user2.getStack().getCards().size());
+        assertEquals(4,user1.getStack().getCards().size());
+        assertEquals(4,user2.getStack().getCards().size());
         user1.CreateRandomDeck();
         user2.CreateRandomDeck();
         assertEquals(0,user1.getStack().getCards().size());
         assertEquals(0,user2.getStack().getCards().size());
-        assertEquals(1,user1.getDeck().getCards().size());
-        assertEquals(1,user2.getDeck().getCards().size());
+        assertEquals(4,user1.getDeck().getCards().size());
+        assertEquals(4,user2.getDeck().getCards().size());
         // Fight
         Combat combat = new Combat(user1,user2);
         combat.Fight();
@@ -69,17 +74,12 @@ public class CombatTest {
     }
     @Test
     public void combat_system_no_decks() {
-        List<AbstractCard> cards1 = new ArrayList<>();
-        List<AbstractCard> cards2 = new ArrayList<>();
-        // Create Stack
-        Stack stack1 = new Stack(cards1);
-        Stack stack2 = new Stack(cards2);
         // Create User
-        User user1 = new User("admin","admin",stack1,0,0);
-        User user2 = new User("admin","admin",stack2,0,0);
+        User user1 = new User("admin","admin");
+        User user2 = new User("admin","admin");
         // Create Random Deck
-        user1.CreateRandomDeck();
-        user2.CreateRandomDeck();
+        assertFalse(user1.CreateRandomDeck());
+        assertFalse(user2.CreateRandomDeck());
         // Fight
         Combat combat = new Combat(user1,user2);
         combat.Fight();
@@ -90,38 +90,52 @@ public class CombatTest {
     }
     @Test
     public void combat_system() {
+        // Package
+        CardPackage pck_1;
+        CardPackage pck_2;
+        CardPackage pck_3;
+        CardPackage pck_4;
         List<AbstractCard> cards1 = new ArrayList<>();
         List<AbstractCard> cards2 = new ArrayList<>();
-        cards1.add(new Dragon("Blue Dragon",117,ElementType.water));
-        cards1.add(new FireElf("Old Fire Elf",107,ElementType.fire));
-        cards1.add(new Goblin("Green Goblin",87,ElementType.normal));
-        cards1.add(new Knight("Heavy Knight",120,ElementType.normal));
-        cards1.add(new Kraken("Deep Blue Kraken",140,ElementType.water));
-        cards1.add(new Ork("White Ork",98,ElementType.normal));
-        cards1.add(new Wizard("Dark Wizard",117,ElementType.fire));
+        List<AbstractCard> cards3 = new ArrayList<>();
+        List<AbstractCard> cards4 = new ArrayList<>();
+        cards1.add(new Dragon("00001","Blue Water Dragon",117));
+        cards1.add(new FireElf("00001","Old Fire Elf",107));
+        cards1.add(new Goblin("00001","Green Goblin",87));
+        cards1.add(new Knight("00001","Heavy Knight",120));
+        cards1.add(new Kraken("00001","Deep Water Kraken",140));
 
-        cards1.add(new Spell("Blue Wave Spell",89, ElementType.water));
-        cards1.add(new Spell("Red Fire Spell",100, ElementType.fire));
-        cards1.add(new Spell("Normal Spell",100, ElementType.normal));
+        cards2.add(new Ork("00001","White Ork",98));
+        cards2.add(new Wizard("00001","Dark Fire Wizard",117));
 
-        cards2.add(new Dragon("Red Dragon",123,ElementType.fire));
-        cards2.add(new FireElf("Old Water Elf",106,ElementType.water));
-        cards2.add(new Goblin("Dark Goblin",102,ElementType.fire));
-        cards2.add(new Knight("Strong Knight",119,ElementType.normal));
-        cards2.add(new Kraken("Deep Black Kraken",143,ElementType.water));
-        cards2.add(new Ork("Gray Ork",87,ElementType.water));
-        cards2.add(new Wizard("White Wizard",110,ElementType.water));
+        cards2.add(new Spell("00001","Blue Water Spell",89));
+        cards2.add(new Spell("00001","Red Fire Spell",100));
+        cards2.add(new Spell("00001","Normal Spell",100));
 
-        cards2.add(new Spell("Deep Ocean Spell",90, ElementType.water));
-        cards2.add(new Spell("Flame Spell",112, ElementType.fire));
-        cards2.add(new Spell("Normal Magic Spell",100, ElementType.normal));
-        // Create Cards
-        Stack stack1 = new Stack(cards1);
-        Stack stack2 = new Stack(cards2);
+        cards3.add(new Dragon("00001","Red Fire Dragon",123));
+        cards3.add(new FireElf("00001","Old Water Elf",106));
+        cards3.add(new Goblin("00001","Fire Goblin",102));
+        cards3.add(new Knight("00001","Strong Knight",119));
+        cards3.add(new Kraken("00001","Deep Water Kraken",143));
+        cards4.add(new Ork("00001","Water Ork",87));
+        cards4.add(new Wizard("00001","Water Wizard",110));
+
+        cards4.add(new Spell("00001","Deep Water Spell",90));
+        cards4.add(new Spell("00001","Fire Spell",112));
+        cards4.add(new Spell("00001","Normal Magic Spell",100));
+        pck_1 = new CardPackage(cards1);
+        pck_2 = new CardPackage(cards2);
+        pck_3 = new CardPackage(cards3);
+        pck_4 = new CardPackage(cards4);
+
         // Create User
-        User user1 = new User("admin","admin",stack1,0,0);
+        User user1 = new User("admin","admin");
+        user1.BuyPackage(pck_1);
+        user1.BuyPackage(pck_4);
         assertEquals(10,user1.getStack().getCards().size());
-        User user2 = new User("admin2","admin2",stack2,0,0);
+        User user2 = new User("admin2","admin2");
+        user2.BuyPackage(pck_2);
+        user2.BuyPackage(pck_3);
         assertEquals(10,user2.getStack().getCards().size());
 
         // Create Random Deck

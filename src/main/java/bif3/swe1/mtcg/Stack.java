@@ -9,14 +9,21 @@ import java.util.List;
 public class Stack {
 
     @Getter
-    private List<AbstractCard> cards = new ArrayList<>();
+    private List<AbstractCard> cards;
 
-    public Stack (List<AbstractCard> stack){
-        if (stack != null){
-            this.cards.addAll(stack);
-        }
+    public Stack (){
+        cards = new ArrayList<>();
     }
 
+    public AbstractCard getCard(String id){
+        for (AbstractCard card : cards){
+            if (card.getId().equals(id)){
+                RemoveCard(card);
+                return card;
+            }
+        }
+        return null;
+    }
     public void RemoveCard(AbstractCard card){
         cards.remove(card);
     }

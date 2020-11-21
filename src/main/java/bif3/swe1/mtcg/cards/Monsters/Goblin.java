@@ -5,13 +5,13 @@ import bif3.swe1.mtcg.cards.ElementType;
 
 public class Goblin extends AbstractCard {
 
-    public Goblin(String name, int damage, ElementType element) {
-        super(name,damage,element);
+    public Goblin(String id, String name, float damage) {
+        super(id, name,damage);
     }
 
     @Override
-    public int calculateDamage(AbstractCard card){
-        int attackDamage = damage;
+    public float calculateDamage(AbstractCard card){
+        float attackDamage = damage;
         if (card instanceof Dragon){
             attackDamage = 0;
         }
