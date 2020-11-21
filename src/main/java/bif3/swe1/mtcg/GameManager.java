@@ -14,6 +14,7 @@ public class GameManager {
     private List<User> user_active = new ArrayList<>();
     private List<CardPackage> pck = new ArrayList<>();
     private List<String> card_IDs = new ArrayList<>();
+    private List<MarketplaceContent> marketplace = new ArrayList<>();
 
     public static GameManager getInstance()
     {
@@ -55,6 +56,7 @@ public class GameManager {
         for (User user : user_database){
             if (user.getUsername().equals(username) && user.checkPwd(pwd)){
                 user_active.add(user);
+                return true;
             }
         }
         return false;
@@ -102,7 +104,7 @@ public class GameManager {
 
     public User authorize(String username){
         for (User user : user_active){
-            if (user.getUsername().equals("Basic " + username + "-mtcgToken")){
+            if (username.equals("Basic " + user.getUsername() + "-mtcgToken")){
                 return user;
             }
         }
@@ -123,6 +125,134 @@ public class GameManager {
     public boolean removePackage(CardPackage pck){
         if (this.pck.indexOf(pck) >= 0){
             this.pck.remove(pck);
+        }
+        return false;
+    }
+
+    public boolean offerCard(String tradeID, String username, String cardID, String type, Float minimumDamage){
+        for (User user : user_active){
+            if (user.getUsername().equals(username)){
+                AbstractCard card = user.getStack().getCard(cardID);
+                if (card == null){
+                    return false;
+                }
+                for (MarketplaceContent content : marketplace){
+                    if (content.getTradeID().equals(tradeID)){
+                        return false;
+                    }
+                }
+                MarketplaceContent content = new MarketplaceContent(tradeID,username,card,type,minimumDamage);
+                marketplace.add(content);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public String showMarktplace(){
+        if (marketplace.size() <= 0){
+            return "Marketplace empty\r\n";
+        }
+        String payload = "";
+        for (int i = 0; i < marketplace.size(); i++){
+            payload += (i+1) + ")\r\n";
+            payload += "    TradeID: " + marketplace.get(i).getTradeID() + "\r\n";
+            payload += "    From: " + marketplace.get(i).getUsername() + "\r\n";
+            payload += "    CardID: " + marketplace.get(i).getCard().getId() + "\r\n";
+            payload += "    Name: " + marketplace.get(i).getCard().getName() + "\r\n";
+            payload += "    Damage: " + marketplace.get(i).getCard().getDamage() + "\r\n";
+            payload += "    Exchange for: " + marketplace.get(i).getType() + "\r\n";
+            payload += "    Minimum Damage: " + marketplace.get(i).getMinimumDamage() + "\r\n";
+        }
+        return payload;
+    }
+
+    public boolean removeTrade(String tradeID, User user){
+        for (int i = 0; i < marketplace.size(); i++){
+            if (marketplace.get(i).getTradeID().equals(tradeID)){
+                if (marketplace.get(i).getUsername().equals(user.getUsername())){
+                    user.getStack().AddCard(marketplace.get(i).getCard());
+                    marketplace.remove(i);
+                    return true;
+                }
+
+            }
+        }
+        return false;
+    }
+
+    public boolean tradeCard(String tradeID, String username, String cardID){
+        User user = null;
+        System.out.println("-1");
+        for (User entry : user_active) {
+            if (entry.getUsername().equals(username)) {
+                user = entry;
+            }
+        }
+        if (user == null){
+            return false;
+        }
+        for (MarketplaceContent entry:marketplace){
+            if (entry.getTradeID().equals(tradeID)){
+                if (entry.getUsername().equals(user.getUsername())){
+                    return false;
+                }
+                AbstractCard card = user.getStack().getCard(cardID);
+                if (card == null){
+                    return false;
+                }
+                if (card.getDamage() < entry.getMinimumDamage()){
+                    return false;
+                }
+                // check Type
+                if (entry.getType().toLowerCase().equals("monster")){
+                    if (card instanceof Spell){
+                        return false;
+                    }
+                } else if (entry.getType().toLowerCase().equals("dragon")){
+                    if (!(card instanceof Dragon)){
+                        return false;
+                    }
+                } else if (entry.getType().toLowerCase().equals("fireelf")){
+                    if (!(card instanceof FireElf)){
+                        return false;
+                    }
+                } else if (entry.getType().toLowerCase().equals("goblin")){
+                    if (!(card instanceof Goblin)){
+                        return false;
+                    }
+                } else if (entry.getType().toLowerCase().equals("knight")){
+                    if (!(card instanceof Knight)){
+                        return false;
+                    }
+                } else if (entry.getType().toLowerCase().equals("kraken")){
+                    if (!(card instanceof Kraken)){
+                        return false;
+                    }
+                } else if (entry.getType().toLowerCase().equals("ork")){
+                    if (!(card instanceof Ork)){
+                        return false;
+                    }
+                } else if (entry.getType().toLowerCase().equals("wizard")){
+                    if (!(card instanceof Wizard)){
+                        return false;
+                    }
+                } else if (entry.getType().toLowerCase().equals("spell")){
+                    if (!(card instanceof Spell)){
+                        return false;
+                    }
+                }
+                for (User user_entry : user_database) {
+                    if (user_entry.getUsername().equals(entry.getUsername())) {
+                        user_entry.getStack().AddCard(card);
+                        user.getStack().AddCard(entry.getCard());
+                        marketplace.remove(entry);
+                        return true;
+                    }
+                }
+                user.getStack().AddCard(card);
+                return false;
+            }
         }
         return false;
     }

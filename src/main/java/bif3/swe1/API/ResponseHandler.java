@@ -39,6 +39,9 @@ public class ResponseHandler {
                         payload = packages(request);
                         break;
                     case "transactions":
+                        if (parts.length != 3){
+                            break;
+                        }
                         switch (parts[2]){
                             case "packages":
                                 user = authorize(request);
@@ -72,6 +75,12 @@ public class ResponseHandler {
                         user = authorize(request);
                         if (user != null){
                             payload = scoreboard(request);
+                        }
+                        break;
+                    case "tradings":
+                        user = authorize(request);
+                        if (user != null){
+                            payload = trade(request,user);
                         }
                         break;
                     default:
@@ -273,6 +282,44 @@ public class ResponseHandler {
         switch (request.getHttp_verb()) {
             case "GET":
                 payload = manager.getScoreboard();
+                break;
+            default:
+                break;
+        }
+        return payload;
+    }
+
+    private String trade(RequestContext request, User user){
+        GameManager manager = GameManager.getInstance();
+        String payload = "ERR\r\n";
+        String[] parts;
+        switch (request.getHttp_verb()) {
+            case "GET":
+                payload = manager.showMarktplace();
+                break;
+            case "POST":
+                parts = request.getRequested().split("/");
+                if (parts.length == 3){
+                    System.out.println(request.getPayload());
+                    String[] card_parts = request.getPayload().split("\"");
+                    System.out.println(card_parts.length);
+                    System.out.println(card_parts[0]);
+                    System.out.println(card_parts[1]);
+                    if (card_parts.length == 2){
+                        payload = booleanToString(manager.tradeCard(parts[2],user.getUsername(),card_parts[1]));
+                    }
+                } else {
+                    JSONObject json = new JSONObject(request.getPayload());
+                    if (json.has("Id") && json.has("CardToTrade") && json.has("Type") && json.has("MinimumDamage")){
+                        payload = booleanToString(manager.offerCard(json.getString("Id"),user.getUsername(),json.getString("CardToTrade"),json.getString("Type"),json.getFloat("MinimumDamage")));
+                    }
+                }
+                break;
+            case "DELETE":
+                parts = request.getRequested().split("/");
+                if (parts.length == 3){
+                    payload = booleanToString(manager.removeTrade(parts[2],user));
+                }
                 break;
             default:
                 break;
