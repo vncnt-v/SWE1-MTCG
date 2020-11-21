@@ -83,6 +83,12 @@ public class ResponseHandler {
                             payload = trade(request,user);
                         }
                         break;
+                    case "battles":
+                        user = authorize(request);
+                        if (user != null){
+                            //payload = battle(request,user);
+                        }
+                        break;
                     default:
                         break;
                 }
