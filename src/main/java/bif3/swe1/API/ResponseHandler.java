@@ -1,16 +1,16 @@
 package bif3.swe1.API;
-import bif3.swe1.mtcg.CardPackage;
-import bif3.swe1.mtcg.GameManager;
-import bif3.swe1.mtcg.User;
-import bif3.swe1.mtcg.cards.AbstractCard;
-import org.json.JSONObject;
-import org.json.JSONArray;
+import bif3.swe1.API.context.RequestContext;
+import bif3.swe1.API.context.ResponseContext;
+import bif3.swe1.mtcg.*;
+import bif3.swe1.mtcg.cards.Card;
+import bif3.swe1.mtcg.cards.collections.CardPackage;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 // Handle request and send response
 public class ResponseHandler {
@@ -22,71 +22,80 @@ public class ResponseHandler {
     }
 
     public void response(RequestContext request) {
-        String payload = "ERR\r\n";
-        // Check resource requested
-        if (request != null){
+        ResponseContext response = new ResponseContext("400 Bad Request");
+        if ( request != null && request.getHeader_values() != null && request.getHeader_values().containsKey("content-type:") && request.getHeader_values().get("content-type:").equalsIgnoreCase("application/json") ){
             String[] parts = request.getRequested().split("/");
             User user = null;
             if ((parts.length == 2 || parts.length == 3)) {
                 switch (parts[1]){
                     case "users":
-                        payload = users(request);
+                        response = users(request);
                         break;
                     case "sessions":
-                        payload = sessions(request);
+                        response = sessions(request);
                         break;
                     case "packages":
-                        payload = packages(request);
+                        response = packages(request);
                         break;
                     case "transactions":
                         if (parts.length != 3){
                             break;
                         }
-                        switch (parts[2]){
-                            case "packages":
-                                user = authorize(request);
-                                if (user != null){
-                                    payload = transactionsPackages(user,request);
-                                }
-                                break;
-                            default:
-                                break;
+                        if (parts[2].equals("packages")){
+                            user = authorize(request);
+                            if (user != null){
+                                response = transactionsPackages(user,request);
+                            } else {
+                                response = new ResponseContext("401 Unauthorized");
+                            }
                         }
                         break;
                     case "cards":
                         user = authorize(request);
                         if (user != null){
-                            payload = showCards(user,request);
+                            response = showCards(user,request);
+                        } else {
+                            response = new ResponseContext("401 Unauthorized");
                         }
                         break;
                     case "deck":
                         user = authorize(request);
                         if (user != null){
-                            payload = requestDeck(user,request);
+                            response = requestDeck(user,request);
+                        } else {
+                            response = new ResponseContext("401 Unauthorized");
                         }
                         break;
                     case "stats":
                         user = authorize(request);
                         if (user != null){
-                            payload = stats(user,request);
+                            response = stats(user,request);
+                        } else {
+                            response = new ResponseContext("401 Unauthorized");
                         }
                         break;
                     case "score":
                         user = authorize(request);
                         if (user != null){
-                            payload = scoreboard(request);
+                            response = scoreboard(request);
+                        } else {
+                            response = new ResponseContext("401 Unauthorized");
                         }
                         break;
                     case "tradings":
                         user = authorize(request);
                         if (user != null){
-                            payload = trade(request,user);
+                            response = trade(request,user);
+                        } else {
+                            response = new ResponseContext("401 Unauthorized");
                         }
                         break;
                     case "battles":
                         user = authorize(request);
                         if (user != null){
-                            //payload = battle(request,user);
+                            //response = battle(request,user);
+                        } else {
+                            response = new ResponseContext("401 Unauthorized");
                         }
                         break;
                     default:
@@ -96,256 +105,305 @@ public class ResponseHandler {
         }
         // Send response
         try {
-            writer.write("HTTP/1.1 200 OK\r\n");
-            writer.write("Server: MailServer\r\n");
-            writer.write("Content-Type: text/html\r\n");
-            writer.write("Content-Length: " + payload.length() + "\r\n\r\n");
-            writer.write(payload);
+            writer.write(response.getHttp_version() + " " + response.getStatus() + "\r\n");
+            writer.write("Server: " + response.getServer() + "\r\n");
+            writer.write("Content-Type: " + response.getContentType() + "\r\n");
+            writer.write("Content-Length: " + response.getContentLength() + "\r\n\r\n");
+            writer.write(response.getPayload());
             writer.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private String users(RequestContext request){
-        GameManager manager = GameManager.getInstance();
+    private ResponseContext users(RequestContext request){
+        UserManager manager = UserManager.getInstance();
+        ResponseContext response = new ResponseContext("400 Bad Request");
+        ObjectMapper mapper;
         User user;
-        JSONObject json;
-        String payload = "ERR\r\n";
-        switch (request.getHttp_verb()){
-            case "POST":
-                json = new JSONObject(request.getPayload());
-                if (json.length() == 2 && json.has("Username") && json.has("Password")){
-                    payload = booleanToString(manager.registerUser(json.get("Username").toString(),json.get("Password").toString()));
-                }
-                break;
+        switch (request.getHttp_verb()) {
             case "GET":
                 user = authorize(request);
-                if (user == null){
-                    break;
+                if (user != null){
+                    String[] parts = request.getRequested().split("/");
+                    if (parts.length == 3){
+                        if (response.setPayload(manager.getUserInfo(parts[2]))){
+                            response.setStatus("200 OK");
+                        } else {
+                            response.setStatus("404 Not Found");
+                        }
+                    }
+                } else {
+                    response.setStatus("401 Unauthorized");
                 }
-                String[] parts = request.getRequested().split("/");
-                if (parts.length == 3){
-                    payload = manager.getBio(parts[2]);
+                break;
+            case "POST":
+                mapper = new ObjectMapper();
+                try {
+                    JsonNode jsonNode = mapper.readTree(request.getPayload());
+                    if ( jsonNode.has("Username") && jsonNode.has("Password")){
+                        if (manager.registerUser(jsonNode.get("Username").asText(),jsonNode.get("Password").asText())) {
+                            response.setStatus("200 OK");
+                        } else {
+                            response.setStatus("409 Conflict");
+                        }
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
                 break;
             case "PUT":
                 user = authorize(request);
-                if (user == null){
-                    break;
-                }
-                String[] editUser = request.getRequested().split("/");
-                if (editUser.length == 3 && user.getUsername().equals(editUser[2])){
-                    json = new JSONObject(request.getPayload());
-                    if (json.length() == 3 && json.has("Name") && json.has("Bio") && json.has("Image")) {
-                        payload = booleanToString(manager.setBio(editUser[2],json.get("Name").toString(),json.get("Bio").toString(),json.get("Image").toString()));
+                if (user != null){
+                    String[] editUser = request.getRequested().split("/");
+                    if (editUser.length == 3 && user.getUsername().equals(editUser[2])){
+                        mapper = new ObjectMapper();
+                        try {
+                            JsonNode jsonNode = mapper.readTree(request.getPayload());
+                            if ( jsonNode.has("name") && jsonNode.has("bio") && jsonNode.has("image")){
+                                manager.setUserInfo(user,jsonNode.get("name").asText(),jsonNode.get("bio").asText(),jsonNode.get("image").asText());
+                                response.setStatus("200 OK");
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                     }
+                } else {
+                    response.setStatus("401 Unauthorized");
                 }
                 break;
             default:
                 break;
         }
-        return payload;
+        return response;
     }
 
-    private String sessions(RequestContext request){
-        GameManager manager = GameManager.getInstance();
-        JSONObject json = new JSONObject(request.getPayload());
-        String payload = "ERR\r\n";
+    private ResponseContext sessions(RequestContext request){
+        UserManager manager = UserManager.getInstance();
+        ResponseContext response = new ResponseContext("400 Bad Request");
         switch (request.getHttp_verb()){
             case "POST":
-                if (json.length() == 2 && json.has("Username") && json.has("Password")){
-                    payload = booleanToString(manager.loginUser(json.get("Username").toString(),json.get("Password").toString()));
+                ObjectMapper mapper = new ObjectMapper();
+                try {
+                    JsonNode jsonNode = mapper.readTree(request.getPayload());
+                    if ( jsonNode.has("Username") && jsonNode.has("Password")){
+                        if (manager.loginUser(jsonNode.get("Username").asText(),jsonNode.get("Password").asText())) {
+                            response.setStatus("200 OK");
+                        }
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
                 break;
             default:
                 break;
         }
-        return payload;
+        return response;
     }
 
-    private String packages(RequestContext request){
-        GameManager manager = GameManager.getInstance();
-        JSONArray jsonArr = new JSONArray(request.getPayload());
-        String payload = "ERR\r\n";
+    private ResponseContext packages(RequestContext request){
+        CardManager manager = CardManager.getInstance();
+        ResponseContext response = new ResponseContext("400 Bad Request");
         switch (request.getHttp_verb()){
             case "POST":
+                ObjectMapper mapper = new ObjectMapper();
+                try {
+                    List<Card> cards = mapper.readValue(request.getPayload(), new TypeReference<>(){});
+                    for (Card card: cards){
+                        System.out.println(card.getId() + " | " + card.getName() + " | " + card.getMonsterType());
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                /*
+
                 if (jsonArr.length() == 5){
-                    List<AbstractCard> cards = new ArrayList<>();
+                    Card cards[] = new Card[5];
                     boolean failed = false;
                     for (int i = 0; i < jsonArr.length(); i++){
-                        JSONObject json = new JSONObject(jsonArr.get(i).toString());
-                        if ((json.length() == 3 || json.length() == 4) && json.has("Id") && json.has("Name") && json.has("Damage")){
-                            AbstractCard card = manager.createCard(json.getString("Id"),json.getString("Name"),json.getFloat("Damage"));
+                        //JSONObject json = new JSONObject(jsonArr.get(i).toString());
+                        if ((json.length() == 3 && json.has("Id") && json.has("Name") && json.has("Damage")){
+                            // MONSTER
+                            Card card = manager.createMonster();
                             if (card == null){
                                 failed = true;
                                 break;
                             }
-                            cards.add(card);
-                        } else {
-                            failed = true;
+                            cards[i] = card;
+                        } else if ( json.length() == 4)){
+                            // SPELL
+                            Card card = manager.createSpell();
+                            if (card == null){
+                                failed = true;
+                                break;
+                            }
+                            cards[i] = card;
                         }
                     }
                     if (!failed){
-                        payload = "OK\r\n";
-                        CardPackage pck = new CardPackage(cards);
-                        manager.addPackage(pck);
+                        response.setStatus("200 OK");
+                        manager.createPackage(cards);
+                    } else {
+                        for (Card card: cards){
+                            manager.deleteCardId(card.getId());
+                        }
                     }
                 }
+                */
                 break;
             default:
                 break;
         }
-        return payload;
+        return response;
     }
 
-    private String transactionsPackages(User user,RequestContext request){
-        GameManager manager = GameManager.getInstance();
-        String payload = "ERR\r\n";
+    private ResponseContext transactionsPackages(User user,RequestContext request){
+        CardManager manager = CardManager.getInstance();
+        ResponseContext response = new ResponseContext("400 Bad Request");
         switch (request.getHttp_verb()) {
             case "POST":
-                CardPackage pck = manager.acquirePackage();
-                if (pck == null) {
-                    return payload;
-                }
-                if (user.BuyPackage(pck)) {
-                    manager.removePackage(pck);
-                    payload = "OK\r\n";
+                if (manager.acquirePackage2User(user)){
+                    response.setStatus("200 OK");
+                } else {
+                    response.setStatus("409 Conflict");
                 }
                 break;
             default:
                 break;
         }
-        return payload;
+        return response;
     }
 
-    private String showCards(User user,RequestContext request){
-        String payload = "ERR\r\n";
+    private ResponseContext showCards(User user,RequestContext request){
+        ResponseContext response = new ResponseContext("400 Bad Request");
         switch (request.getHttp_verb()) {
             case "GET":
-                payload = user.getStack().getCards().size() + " Cards\r\n";
-                for (int i = 0; i < user.getStack().getCards().size(); i++){
-                    payload += (i+1) + ")\r\n";
-                    payload += "    ID: " + user.getStack().getCards().get(i).getId() + "\r\n";
-                    payload += "    Name: " + user.getStack().getCards().get(i).getName() + "\r\n";
-                    payload += "    Damage: " + user.getStack().getCards().get(i).getDamage() + "\r\n";
+                String json = user.getStackCards();
+                if (json != null){
+                    response.setStatus("200 OK");
+                    response.setPayload(json);
+                } else {
+                    response.setStatus("410 Error");
                 }
                 break;
             default:
                 break;
         }
-        return payload;
+        return response;
     }
 
-    private String requestDeck(User user,RequestContext request){
-        String payload = "ERR\r\n";
+    private ResponseContext requestDeck(User user,RequestContext request){
+        ResponseContext response = new ResponseContext("400 Bad Request");
         switch (request.getHttp_verb()) {
             case "GET":
-                if (user.getDeck() == null){
-                    return "0 Cards\r\n";
-                }
-                payload = user.getDeck().getCards().size() + " Cards\r\n";
-                for (int i = 0; i < user.getDeck().getCards().size(); i++){
-                    payload += (i+1) + ")\r\n";
-                    payload += "    ID: " + user.getDeck().getCards().get(i).getId() + "\r\n";
-                    payload += "    Name: " + user.getDeck().getCards().get(i).getName() + "\r\n";
-                    payload += "    Damage: " + user.getDeck().getCards().get(i).getDamage() + "\r\n";
+                String json = user.getDeckCards();
+                if (json != null){
+                    response.setStatus("200 OK");
+                    response.setPayload(json);
+                } else {
+                    response.setStatus("410 Error");
                 }
                 break;
             case "PUT":
-                JSONArray jsonArr = new JSONArray(request.getPayload());
-                if (jsonArr.length() == 4){
-                    List<String> cardID = new ArrayList<>();
-                    for (int i = 0; i < jsonArr.length(); i++){
-                        cardID.add(jsonArr.get(i).toString());
+                ObjectMapper mapper = new ObjectMapper();
+                try {
+                    List<String> ids = mapper.readValue(request.getPayload(), new TypeReference<>(){});
+                    if (ids.size() == 4){
+                        if (user.createDeck(ids)){
+                            response.setStatus("200 OK");
+                        }
                     }
-                    if (user.createDeck(cardID)){
-                        payload = "OK\r\n";
-                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
                 break;
             default:
                 break;
         }
-        return payload;
+        return response;
     }
 
-    private String stats(User user,RequestContext request){
-        String payload = "ERR\r\n";
+    private ResponseContext stats(User user,RequestContext request){
+        ResponseContext response = new ResponseContext("400 Bad Request");
         switch (request.getHttp_verb()) {
             case "GET":
-                payload = "Games: " + user.getCount_of_games() + "\r\nWins:" + user.getCount_of_wins() + "\r\n";
+                response.setStatus("200 OK");
+                response.setPayload(user.getStats());
                 break;
             default:
                 break;
         }
-        return payload;
+        return response;
     }
 
-    private String scoreboard(RequestContext request){
-        GameManager manager = GameManager.getInstance();
-        String payload = "ERR\r\n";
+    private ResponseContext scoreboard(RequestContext request){
+        EloManager manager = EloManager.getInstance();
+        ResponseContext response = new ResponseContext("400 Bad Request");
         switch (request.getHttp_verb()) {
             case "GET":
-                payload = manager.getScoreboard();
+                response.setPayload(manager.getEloScores());
+                response.setStatus("200 OK");
                 break;
             default:
                 break;
         }
-        return payload;
+        return response;
     }
 
-    private String trade(RequestContext request, User user){
-        GameManager manager = GameManager.getInstance();
-        String payload = "ERR\r\n";
+    private ResponseContext trade(RequestContext request, User user){
+        TradeManager manager = TradeManager.getInstance();
+        ResponseContext response = new ResponseContext("400 Bad Request");
         String[] parts;
         switch (request.getHttp_verb()) {
             case "GET":
-                payload = manager.showMarktplace();
+                response.setPayload(manager.showMarktplace());
+                response.setStatus("200 OK");
                 break;
             case "POST":
                 parts = request.getRequested().split("/");
                 if (parts.length == 3){
-                    System.out.println(request.getPayload());
                     String[] card_parts = request.getPayload().split("\"");
-                    System.out.println(card_parts.length);
-                    System.out.println(card_parts[0]);
-                    System.out.println(card_parts[1]);
                     if (card_parts.length == 2){
-                        payload = booleanToString(manager.tradeCard(parts[2],user.getUsername(),card_parts[1]));
+                        if (manager.tradeCard(user,parts[2],card_parts[1])){
+                            response.setStatus("200 OK");
+                        }
                     }
                 } else {
-                    JSONObject json = new JSONObject(request.getPayload());
-                    if (json.has("Id") && json.has("CardToTrade") && json.has("Type") && json.has("MinimumDamage")){
-                        payload = booleanToString(manager.offerCard(json.getString("Id"),user.getUsername(),json.getString("CardToTrade"),json.getString("Type"),json.getFloat("MinimumDamage")));
+                    // JSON
+                    ObjectMapper mapper = new ObjectMapper();
+                    try {
+                        JsonNode jsonNode = mapper.readTree(request.getPayload());
+                        if ( jsonNode.has("Id") && jsonNode.has("CardToTrade") && jsonNode.has("Type") && jsonNode.has("MinimumDamage")){
+                            //manager.card2market(user,jsonNode.get("Id").asText(),jsonNode.get("CardToTrade").asText(),jsonNode.get("MonsterType").asText(),(float)jsonNode.get("MinimumDamage").asDouble());
+                            //public boolean card2market(User user, String tradeID, String cardID, ElementType element, MonsterType monster, float minimumDamage, float minimumWeakness){
+
+                                response.setStatus("200 OK");
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
                 }
                 break;
             case "DELETE":
                 parts = request.getRequested().split("/");
                 if (parts.length == 3){
-                    payload = booleanToString(manager.removeTrade(parts[2],user));
+                    if (manager.removeTrade(parts[2],user)){
+                        response.setStatus("200 OK");
+                    }
                 }
                 break;
             default:
                 break;
         }
-        return payload;
+        return response;
     }
 
     private User authorize(RequestContext request){
         User user = null;
         if (request.getHeader_values().containsKey("authorization:")){
-            GameManager manager = GameManager.getInstance();
-            user = manager.authorize(request.getHeader_values().get("authorization:"));
+            UserManager manager = UserManager.getInstance();
+            user = manager.authorizeUser(request.getHeader_values().get("authorization:"));
         }
         return user;
-    }
-
-    private String booleanToString(boolean bool){
-        if (bool){
-            return "OK\r\n";
-        }
-        return "ERR\r\n";
     }
 }

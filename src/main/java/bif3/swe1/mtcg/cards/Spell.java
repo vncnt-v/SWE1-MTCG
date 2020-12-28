@@ -1,31 +1,21 @@
 package bif3.swe1.mtcg.cards;
 
-import bif3.swe1.mtcg.cards.Monsters.Kraken;
+import bif3.swe1.mtcg.cards.types.ElementType;
+import bif3.swe1.mtcg.cards.types.MonsterType;
+import lombok.Getter;
 
-public class Spell extends AbstractCard {
+public class Spell extends Card{
 
-    public Spell(String id,String name, float damage) {
-        super(id,name,damage);
+    @Getter
+    private final float weakness;
+
+    public Spell(String id, String name, float damage, float weakness, ElementType element) {
+        super(id,name,damage,element);
+        this.weakness = weakness;
     }
 
     @Override
-    public float calculateDamage(AbstractCard card){
-        float attackDamage = damage;
-        if (card instanceof Kraken){
-            attackDamage = 0;
-        } else if (element == ElementType.water && card.getElement() == ElementType.fire){
-            attackDamage *= 2;
-        } else if (element == ElementType.fire && card.getElement() == ElementType.normal){
-            attackDamage *= 2;
-        } else if (element == ElementType.normal && card.getElement() == ElementType.water){
-            attackDamage *= 2;
-        } else if (element == ElementType.fire && card.getElement() == ElementType.water){
-            attackDamage /= 2;
-        } else if (element == ElementType.normal && card.getElement() == ElementType.fire){
-            attackDamage /= 2;
-        } else if (element == ElementType.water && card.getElement() == ElementType.normal){
-            attackDamage /= 2;
-        }
-        return attackDamage;
+    public float getWeakness() {
+        return weakness;
     }
 }

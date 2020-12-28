@@ -1,11 +1,9 @@
 package bif3.swe1.API;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
+import bif3.swe1.API.context.RequestContext;
+
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 // unwrap request and saves in RequestContext
 public class Unwrapper {

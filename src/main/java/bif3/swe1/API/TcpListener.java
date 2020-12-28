@@ -1,5 +1,7 @@
 package bif3.swe1.API;
 
+import bif3.swe1.API.context.RequestContext;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
