@@ -5,6 +5,7 @@ import bif3.swe1.mtcg.cards.Card;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,15 +25,6 @@ public class UserManager {
         return single_instance;
     }
 
-    public User authorizeUser(String token){
-        for (User user : user_active){
-            if (user.authorize(token)){
-                return user;
-            }
-        }
-        return null;
-    }
-
     public boolean addCard2User(Card card, String username){
         for (User user : user_database){
             if (user.getUsername().equals(username)){
@@ -43,17 +35,27 @@ public class UserManager {
         return false;
     }
 
-    public boolean deleteUser(String username, String pwd){
-        for (User user : user_database){
-            if (user.getUsername().equals(username)){
-                if (user.checkPwd(pwd)){
-                    user_database.remove(user);
-                    return true;
-                }
-                return false;
+    public User authorizeUser(String token){
+        try {
+            Connection conn = DatabaseService.getInstance().getConnection();
+            PreparedStatement ps = conn.prepareStatement("SELECT * FROM users WHERE token = ?;");
+            ps.setString(1, token);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                User user = new User(rs.getString(1),rs.getString(2),rs.getInt(6),rs.getString(3),rs.getString(4),rs.getString(5),rs.getInt(7),rs.getInt(8));
+                rs.close();
+                ps.close();
+                conn.close();
+                return user;
             }
+            rs.close();
+            ps.close();
+            conn.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
         }
-        return false;
+        return null;
     }
 
     public boolean registerUser(String username, String pwd) {

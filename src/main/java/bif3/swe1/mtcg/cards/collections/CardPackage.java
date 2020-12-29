@@ -3,11 +3,13 @@ package bif3.swe1.mtcg.cards.collections;
 import bif3.swe1.mtcg.cards.Card;
 import lombok.Getter;
 
+import java.util.List;
+
 public class CardPackage {
     @Getter
-    private Card cards[] = new Card[5];
+    private List<Card> cards;
 
-    public CardPackage(Card cards[]){
+    public CardPackage(List<Card> cards){
         this.cards = cards;
     }
 }

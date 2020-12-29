@@ -1,6 +1,6 @@
 package bif3.swe1.mtcg.cards.types;
 
-public enum MonsterType {
+public enum CardType {
     Dragon,
     FireElf,
     Goblin,
@@ -8,4 +8,5 @@ public enum MonsterType {
     Kraken,
     Ork,
     Wizard,
+    Spell,
 }

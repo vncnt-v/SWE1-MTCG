@@ -6,10 +6,12 @@ import bif3.swe1.mtcg.cards.Card;
 import bif3.swe1.mtcg.cards.collections.CardPackage;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 // Handle request and send response
@@ -181,13 +183,25 @@ public class ResponseHandler {
     private ResponseContext sessions(RequestContext request){
         UserManager manager = UserManager.getInstance();
         ResponseContext response = new ResponseContext("400 Bad Request");
+        ObjectMapper mapper = new ObjectMapper();
         switch (request.getHttp_verb()){
             case "POST":
-                ObjectMapper mapper = new ObjectMapper();
                 try {
                     JsonNode jsonNode = mapper.readTree(request.getPayload());
                     if ( jsonNode.has("Username") && jsonNode.has("Password")){
                         if (manager.loginUser(jsonNode.get("Username").asText(),jsonNode.get("Password").asText())) {
+                            response.setStatus("200 OK");
+                        }
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                break;
+            case "DELETE":
+                try {
+                    JsonNode jsonNode = mapper.readTree(request.getPayload());
+                    if ( jsonNode.has("Username") && jsonNode.has("Password")){
+                        if (manager.logoutUser(jsonNode.get("Username").asText(),jsonNode.get("Password").asText())) {
                             response.setStatus("200 OK");
                         }
                     }
@@ -207,49 +221,34 @@ public class ResponseHandler {
         switch (request.getHttp_verb()){
             case "POST":
                 ObjectMapper mapper = new ObjectMapper();
+                // ToDo
+                // Authorize User and check if Admin
                 try {
+                    mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
                     List<Card> cards = mapper.readValue(request.getPayload(), new TypeReference<>(){});
-                    for (Card card: cards){
-                        System.out.println(card.getId() + " | " + card.getName() + " | " + card.getMonsterType());
+                    if (cards.size() == 5){
+                        List<Card> createdCards = new ArrayList<>();
+                        for (Card card: cards){
+                            if (manager.createCard(card.getId(),card.getName(),card.getDamage())) {
+                                createdCards.add(card);
+                            } else {
+                                for (Card card_tmp: createdCards){
+                                    manager.deleteCard(card_tmp.getId());
+                                }
+                                return response;
+                            }
+                        }
+                        if(manager.createPackage(cards)){
+                            response.setStatus("201 Created");
+                        } else {
+                            for (Card card_tmp: createdCards){
+                                manager.deleteCard(card_tmp.getId());
+                            }
+                        }
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                /*
-
-                if (jsonArr.length() == 5){
-                    Card cards[] = new Card[5];
-                    boolean failed = false;
-                    for (int i = 0; i < jsonArr.length(); i++){
-                        //JSONObject json = new JSONObject(jsonArr.get(i).toString());
-                        if ((json.length() == 3 && json.has("Id") && json.has("Name") && json.has("Damage")){
-                            // MONSTER
-                            Card card = manager.createMonster();
-                            if (card == null){
-                                failed = true;
-                                break;
-                            }
-                            cards[i] = card;
-                        } else if ( json.length() == 4)){
-                            // SPELL
-                            Card card = manager.createSpell();
-                            if (card == null){
-                                failed = true;
-                                break;
-                            }
-                            cards[i] = card;
-                        }
-                    }
-                    if (!failed){
-                        response.setStatus("200 OK");
-                        manager.createPackage(cards);
-                    } else {
-                        for (Card card: cards){
-                            manager.deleteCardId(card.getId());
-                        }
-                    }
-                }
-                */
                 break;
             default:
                 break;

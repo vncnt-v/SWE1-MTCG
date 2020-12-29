@@ -2,7 +2,7 @@ package bif3.swe1.mtcg;
 
 import bif3.swe1.mtcg.cards.Card;
 import bif3.swe1.mtcg.cards.types.ElementType;
-import bif3.swe1.mtcg.cards.types.MonsterType;
+import bif3.swe1.mtcg.cards.types.CardType;
 import lombok.Getter;
 
 public class TradingDeal {
@@ -14,7 +14,7 @@ public class TradingDeal {
     @Getter
     private Card card;
     @Getter
-    private MonsterType monster;
+    private CardType monster;
     @Getter
     private ElementType element;
     @Getter
@@ -22,7 +22,7 @@ public class TradingDeal {
     @Getter
     private float minimumWeakness;
 
-    public TradingDeal(String tradeID, String username, Card card, ElementType element, MonsterType monster, float minimumDamage, float minimumWeakness){
+    public TradingDeal(String tradeID, String username, Card card, ElementType element, CardType monster, float minimumDamage, float minimumWeakness){
         this.tradeID = tradeID;
         this.username = username;
         this.card = card;

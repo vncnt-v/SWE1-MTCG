@@ -48,11 +48,11 @@ public class Stack {
         if (pck == null){
             return;
         }
-        Card newCards[] = pck.getCards();
+        /*Card newCards[] = pck.getCards();
         for (int i = 0; i < newCards.length; i++){
             if (newCards[i] != null){
                 cards.add(newCards[i]);
             }
-        }
+        }*/
     }
 }

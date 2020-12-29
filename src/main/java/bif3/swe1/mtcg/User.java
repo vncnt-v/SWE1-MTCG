@@ -34,9 +34,9 @@ public class User {
     @Getter
     private int count_of_wins;
 
-    private final String token;
+    //private final String token;
 
-    public User(String username, String pwd, int coins, String name, String bio, String image, int count_of_games, int count_of_wins, String token){
+    public User(String username, String pwd, int coins, String name, String bio, String image, int count_of_games, int count_of_wins){
         this.username = username;
         this.pwd = pwd;
         this.coins = coins;
@@ -46,7 +46,7 @@ public class User {
         this.count_of_games = count_of_games;
         this.count_of_wins = count_of_wins;
         this.stack = new Stack();
-        this.token = token;
+        //this.token = token;
     }
 
     public int getDeckSize(){
@@ -54,10 +54,6 @@ public class User {
             return 0;
         }
         return deck.getCards().size();
-    }
-
-    public boolean authorize(String token){
-        return this.token.equals(token);
     }
 
     public boolean acquirePackage(CardPackage pck){

@@ -1,9 +1,8 @@
 package bif3.swe1.mtcg;
 
 import bif3.swe1.mtcg.cards.Card;
-import bif3.swe1.mtcg.cards.Monster;
 import bif3.swe1.mtcg.cards.types.ElementType;
-import bif3.swe1.mtcg.cards.types.MonsterType;
+import bif3.swe1.mtcg.cards.types.CardType;
 
 public class Combat {
 
@@ -59,21 +58,21 @@ public class Combat {
     }
 
     public float calculateDamage(Card card1, Card card2){
-        if (card1 instanceof Monster){
+        /*if (card1 instanceof Monster){
             if (card2 instanceof Monster) {
                 switch (card1.getMonsterType()){
                     case Dragon:
-                        if (card2.getMonsterType() == MonsterType.FireElf){
+                        if (card2.getMonsterType() == CardType.FireElf){
                             return 0;
                         }
                         break;
                     case Goblin:
-                        if (card2.getMonsterType() == MonsterType.Dragon){
+                        if (card2.getMonsterType() == CardType.Dragon){
                             return 0;
                         }
                         break;
                     case Ork:
-                        if (card2.getMonsterType() == MonsterType.Wizard){
+                        if (card2.getMonsterType() == CardType.Wizard){
                             return 0;
                         }
                         break;
@@ -82,7 +81,7 @@ public class Combat {
                 }
                 return card1.getDamage();
             } else {
-                if (card1.getMonsterType() == MonsterType.Knight && card2.getElement() == ElementType.water){
+                if (card1.getMonsterType() == CardType.Knight && card2.getElement() == ElementType.water){
                     return -1;
                 }
             }
@@ -103,7 +102,7 @@ public class Combat {
                     return card1.getDamage() * 2;
                 }
                 break;
-        }
+        }*/
         return card1.getDamage();
     }
 }
