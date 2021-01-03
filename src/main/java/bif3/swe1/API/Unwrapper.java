@@ -39,6 +39,9 @@ public class Unwrapper {
         String message;
         // HTTP-Verb, resource requested, the http-version
         message = reader.readLine();
+        if (message == null){
+            return null;
+        }
         String[] parts = message.split(" ");
         if (parts.length == 3){
             request.setHttp_verb(parts[0]);

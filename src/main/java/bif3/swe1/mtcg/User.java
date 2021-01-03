@@ -1,193 +1,129 @@
 package bif3.swe1.mtcg;
+import bif3.swe1.database.DatabaseService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import bif3.swe1.mtcg.cards.Card;
-import bif3.swe1.mtcg.cards.collections.CardPackage;
-import bif3.swe1.mtcg.cards.collections.Deck;
-import bif3.swe1.mtcg.cards.collections.Stack;
-import lombok.Setter;
 import lombok.Getter;
 
-import java.io.IOException;
-import java.util.ArrayList;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 public class User {
 
     @Getter
     private final String username;
-    private final String pwd;
-    @Setter
-    @Getter
-    private String name;
-    @Setter
-    @Getter
-    private String bio;
-    @Setter
-    @Getter
-    private String image;
+    private final String name;
+    private final String bio;
+    private final String image;
+    private final Integer coins;
+    private final int games;
+    private final int wins;
 
-    private int coins;
-    private Deck deck;
-    private Stack stack;
-    @Getter
-    private int count_of_games;
-    @Getter
-    private int count_of_wins;
 
-    //private final String token;
-
-    public User(String username, String pwd, int coins, String name, String bio, String image, int count_of_games, int count_of_wins){
+    public User(String username, String name, String bio, String image, int coins, int games, int wins){
         this.username = username;
-        this.pwd = pwd;
-        this.coins = coins;
         this.name = name;
         this.bio = bio;
         this.image = image;
-        this.count_of_games = count_of_games;
-        this.count_of_wins = count_of_wins;
-        this.stack = new Stack();
-        //this.token = token;
+        this.coins = coins;
+        this.games = games;
+        this.wins = wins;
     }
 
-    public int getDeckSize(){
-        if (deck == null || deck.getCards() == null){
-            return 0;
-        }
-        return deck.getCards().size();
-    }
-
-    public boolean acquirePackage(CardPackage pck){
-        if (coins < 5){
-            return false;
-        }
-        stack.addPackage(pck);
-        coins -= 5;
-        return true;
-    }
-
-    public String getStackCards(){
-        ObjectMapper mapper = new ObjectMapper();
-        String response = null;
+    public String getInfo(){
         try {
-            // ToDo
-            // Java objects to JSON string - compact-print
-            response = mapper.writeValueAsString(stack);
-            System.out.println(response);
-            // Java objects to JSON string - pretty-print
-            response = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(stack);
-            System.out.println(response);
-        } catch (IOException e) {
+            Map<String,String> map = new HashMap<>();
+            map.put("Name:",name);
+            map.put("Bio:",bio);
+            map.put("Image:",image);
+            map.put("Coins:",coins.toString());
+            return new ObjectMapper().writeValueAsString(map);
+        } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
-        return response;
+        return null;
     }
 
-    public String getDeckCards(){
-        ObjectMapper mapper = new ObjectMapper();
-        String response = null;
+    public String getStats(){
         try {
-            // ToDo
-            // Java objects to JSON string - compact-print
-            response = mapper.writeValueAsString(deck);
-            System.out.println(response);
-            // Java objects to JSON string - pretty-print
-            response = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(deck);
-            System.out.println(response);
-        } catch (IOException e) {
+            Map<String,Integer> map = new HashMap<>();
+            map.put("Wins:",wins);
+            map.put("Games:",games);
+            return new ObjectMapper().writeValueAsString(map);
+        } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
-        return response;
+        return null;
     }
 
-    public Card drawDeckRandom(){
-        if (deck == null || deck.getCards().isEmpty()){
-            return null;
-        } else {
-            return deck.getRandomCard();
+    public boolean buyPackage(){
+        try {
+            if (coins < 5){
+                return false;
+            }
+            Connection conn = DatabaseService.getInstance().getConnection();
+            PreparedStatement ps = conn.prepareStatement("UPDATE users SET coins = ? WHERE username = ?;");
+            ps.setInt(1,coins-5);
+            ps.setString(2,username);
+            ps.executeUpdate();
+            ps.close();
+            conn.close();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-    }
-
-    public Card getStackCard(String id){
-        return stack.getCard(id);
+        return false;
     }
 
     public boolean createDeck(List<String> id){
         if (id.size() != 4){
             return false;
         }
-        List<Card> newDeck = new ArrayList<>();
-        for (String value : id){
-            Card card = stack.getCard(value);
-            if (card != null){
-                newDeck.add(card);
-            } else {
-                for (Card tmp : newDeck){
-                    stack.addCard(tmp);
+        try {
+            Connection conn = DatabaseService.getInstance().getConnection();
+            // Check if user owns Cards
+            List<String> checkTwice = new LinkedList<>();
+            for (String cardID: id){
+                if (checkTwice.contains(cardID)){
+                    conn.close();
+                    return false;
                 }
-                return false;
-            }
-        }
-        this.deck = new Deck(newDeck);
-        return true;
-    }
-
-    public boolean createRandomDeck(){
-        List<Card> newDeck = new ArrayList<>();
-        for (int i = 0; i < 4; i++){
-            Card card = stack.getRandomCard();
-            if (card != null) {
-                newDeck.add(card);
-            } else {
-                for (Card tmp : newDeck){
-                    stack.addCard(tmp);
+                checkTwice.add(cardID);
+                PreparedStatement ps = conn.prepareStatement("SELECT COUNT(cardid) FROM cards WHERE cardid = ? AND owner = ? AND (collection IS NULL OR collection NOT LIKE 'marktplace');");
+                ps.setString(1,cardID);
+                ps.setString(2,username);
+                ResultSet rs = ps.executeQuery();
+                System.out.println(username);
+                System.out.println(cardID);
+                if (!rs.next() || rs.getInt(1) != 1) {
+                    ps.close();
+                    rs.close();
+                    conn.close();
+                    return false;
                 }
-                return false;
             }
+            // Set all Cards to Stack
+            PreparedStatement ps = conn.prepareStatement("UPDATE cards SET collection = 'stack' WHERE owner = ?;");
+            ps.setString(1,username);
+            ps.executeUpdate();
+            // Change Cards to Deck
+            for (String cardID: id){
+                ps = conn.prepareStatement("UPDATE cards SET collection = 'deck' WHERE owner = ? AND cardID = ?;");
+                ps.setString(1,username);
+                ps.setString(2,cardID);
+                ps.executeUpdate();
+            }
+            ps.close();
+            conn.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
         }
-        this.deck = new Deck(newDeck);
         return true;
-    }
-
-    public void winGame(){
-        count_of_games++;
-        count_of_wins++;
-    }
-
-    public void loseGame(){
-        count_of_games++;
-    }
-
-    public void addCard(Card card){
-        stack.addCard(card);
-    }
-
-    public void removeStackCard(Card card){
-        stack.removeCard(card);
-    }
-
-    public void removeDeckCard(Card card){
-        if (deck != null){
-            deck.removeCard(card);
-        }
-    }
-
-    public String getStats(){
-        // ToDo JSON
-        return "";
-    }
-
-    public void removeDeck(){
-        if (deck != null){
-            while(!deck.getCards().isEmpty()){
-                Card card = deck.getRandomCard();
-                stack.addCard(card);
-                deck.removeCard(card);
-            }
-            deck = null;
-        }
-    }
-
-    public boolean checkPwd(String pwd){
-        return this.pwd.equals(pwd);
     }
 }

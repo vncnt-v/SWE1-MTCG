@@ -1,8 +1,6 @@
-package bif3.swe1.mtcg;
+package bif3.swe1.mtcg.manager;
 
-import bif3.swe1.mtcg.cards.Card;
-import bif3.swe1.mtcg.cards.types.ElementType;
-import bif3.swe1.mtcg.cards.types.CardType;
+import bif3.swe1.mtcg.TradingDeal;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +18,7 @@ public class TradeManager {
         }
         return single_instance;
     }
-
+/*
     public boolean card2market(User user, String tradeID, String cardID, ElementType element, CardType monster, float minimumDamage, float minimumWeakness){
         Card card = user.getStackCard(cardID);
         if (card == null){
@@ -62,7 +60,7 @@ public class TradeManager {
                 payload += "    Wanted Card: " + trades.get(i).getMonster() + "\r\n";
                 payload += "    Wanted Element: " + trades.get(i).getElement() + "\r\n";
                 payload += "    Minimum Damage: " + trades.get(i).getMinimumDamage() + "\r\n";
-            }*/
+            }
         }
         return payload;
     }
@@ -99,7 +97,7 @@ public class TradeManager {
                     return false;
                 }
                 // check Type
-                /*
+
                 if (trade.getMonster() == null && card instanceof Spell){
                     if (trade.getMinimumWeakness() > card.getWeakness()) {
                         UserManager manager = UserManager.getInstance();
@@ -121,11 +119,12 @@ public class TradeManager {
                     }
                     user.addCard(card);
                     return false;
-                }*/
+                }
                 user.addCard(card);
                 return false;
             }
         }
         return false;
     }
+    */
 }

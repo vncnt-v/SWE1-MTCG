@@ -1,19 +1,20 @@
-package bif3.swe1.mtcg;
+package bif3.swe1.mtcg.manager;
 
+import bif3.swe1.mtcg.User;
 import bif3.swe1.mtcg.cards.Card;
 import bif3.swe1.mtcg.cards.types.ElementType;
 import bif3.swe1.mtcg.cards.types.CardType;
 
-public class Combat {
+public class CombatManager {
 
     private final User user1;
     private final User user2;
 
-    public Combat(User user1, User user2){
+    public CombatManager(User user1, User user2){
         this.user1 = user1;
         this.user2 = user2;
     }
-
+/*
     public void Fight(){
         int turns = 0;
         if (user1.getDeckSize() <= 0 || user2.getDeckSize() <= 0) {
@@ -102,7 +103,8 @@ public class Combat {
                     return card1.getDamage() * 2;
                 }
                 break;
-        }*/
+        }
         return card1.getDamage();
     }
+    */
 }

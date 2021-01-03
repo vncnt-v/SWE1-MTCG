@@ -1,6 +1,3 @@
-import bif3.swe1.mtcg.EloManager;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class GameManagerTest {

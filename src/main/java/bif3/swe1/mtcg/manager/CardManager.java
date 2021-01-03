@@ -1,9 +1,14 @@
-package bif3.swe1.mtcg;
+package bif3.swe1.mtcg.manager;
 
 import bif3.swe1.database.DatabaseService;
+import bif3.swe1.mtcg.User;
 import bif3.swe1.mtcg.cards.Card;
 import bif3.swe1.mtcg.cards.types.CardType;
 import bif3.swe1.mtcg.cards.types.ElementType;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -21,7 +26,6 @@ public class CardManager {
             single_instance = new CardManager();
         }
         return single_instance;
-
     }
 
     public boolean createPackage(List<Card> cards){
@@ -31,27 +35,15 @@ public class CardManager {
         try {
             Connection conn = DatabaseService.getInstance().getConnection();
             for (Card card: cards){
-                PreparedStatement ps = conn.prepareStatement("SELECT COUNT(cardID) FROM cards WHERE cardID = ?;");
+                PreparedStatement ps = conn.prepareStatement("SELECT COUNT(cardid) FROM cards WHERE cardid = ? AND collection IS NULL;");
                 ps.setString(1, card.getId());
                 ResultSet rs = ps.executeQuery();
-                if (rs.next()) {
-                    if (rs.getInt(1) != 1){
-                        ps.close();
-                        rs.close();
-                        return false;
-                    }
-                }
-                ps = conn.prepareStatement("SELECT COUNT(cardID) FROM dependencies WHERE cardID = ?;");
-                ps.setString(1, card.getId());
-                rs = ps.executeQuery();
-                if (rs.next()) {
-                    if (rs.getInt(1) != 0){
-                        ps.close();
-                        rs.close();
-                        return false;
-                    }
-                }
                 ps.close();
+                if (!rs.next() || rs.getInt(1) != 1) {
+                    rs.close();
+                    conn.close();
+                    return false;
+                }
                 rs.close();
             }
             conn.close();
@@ -70,7 +62,7 @@ public class CardManager {
             int affectedRows = ps.executeUpdate();
             ps.close();
             conn.close();
-            if (affectedRows == 0) {
+            if (affectedRows != 1) {
                 return false;
             }
         } catch (SQLException e) {
@@ -80,18 +72,90 @@ public class CardManager {
         return true;
     }
 
-    public boolean acquirePackage2User(User user){
-        /*if (pck.size() > 0){
-            int random = (int)(Math.random() * pck.size());
-            if (user.acquirePackage(pck.get(random))){
-                pck.remove(random);
-                return true;
-            }
-        }*/
-        return false;
+    public String showUserCards (User user){
+        try {
+            Connection conn = DatabaseService.getInstance().getConnection();
+            PreparedStatement ps = conn.prepareStatement("SELECT cardID, name, damage FROM cards WHERE owner = ?;");
+            ps.setString(1,user.getUsername());
+            String json = result2Json(ps.executeQuery());
+            ps.close();
+            conn.close();
+            return json;
+        } catch (SQLException | JsonProcessingException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
-    public ElementType createElementType (String element){
+    public String showUserDeck (User user){
+        try {
+            Connection conn = DatabaseService.getInstance().getConnection();
+            PreparedStatement ps = conn.prepareStatement("SELECT cardID, name, damage FROM cards WHERE owner = ? AND collection = 'deck';");
+            ps.setString(1,user.getUsername());
+            String json = result2Json(ps.executeQuery());
+            ps.close();
+            conn.close();
+            return json;
+        } catch (SQLException | JsonProcessingException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private String result2Json(ResultSet rs) throws SQLException, JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        ArrayNode arrayNode = mapper.createArrayNode();
+        while (rs.next()){
+            ObjectNode card = mapper.createObjectNode();
+            card.put("ID",rs.getString(1));
+            card.put("Name",rs.getString(2));
+            card.put("Damage",rs.getString(3));
+            arrayNode.add(card);
+        }
+        rs.close();
+        return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(arrayNode);
+    }
+
+    public boolean acquirePackage2User(User user){
+        try {
+            Connection conn = DatabaseService.getInstance().getConnection();
+            // Check Existing Package
+            PreparedStatement ps = conn.prepareStatement("SELECT * FROM packages;");
+            ResultSet rs = ps.executeQuery();
+            ps.close();
+            if (!rs.next()) {
+                rs.close();
+                conn.close();
+                return false;
+            }
+            int packageID = rs.getInt(1);
+            // Decrease Coins User
+            if (!user.buyPackage()){
+                return false;
+            }
+            // Update Cards Owner and Collection
+            PreparedStatement ps_Card = conn.prepareStatement("UPDATE cards SET owner = ?, collection = 'stack' WHERE cardID = ?;");
+            for (int i = 2; i < 7; i++){
+                ps_Card.setString(1,user.getUsername());
+                ps_Card.setString(2,rs.getString(i));
+                ps_Card.executeUpdate();
+            }
+            rs.close();
+            ps_Card.close();
+            // Delete Package
+            PreparedStatement ps_Package = conn.prepareStatement("DELETE FROM packages WHERE packageID = ?;");
+            ps_Package.setInt(1,packageID);
+            ps_Package.executeUpdate();
+            ps_Package.close();
+            conn.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
+    private ElementType createElementType (String element){
         if (element.toLowerCase().contains("water")){
             return ElementType.water;
         } else if (element.toLowerCase().contains("fire")){
@@ -101,7 +165,7 @@ public class CardManager {
         }
     }
 
-    public CardType createCardType (String name){
+    private CardType createCardType (String name){
         if (name.toLowerCase().contains("spell")){
             return CardType.Spell;
         } else if (name.toLowerCase().contains("dragon")){
@@ -122,19 +186,17 @@ public class CardManager {
         return null;
     }
 
-    public boolean createCard(String id, String name, float damage) {
+    public boolean registerCard(String id, String name, float damage) {
         if (!id.isEmpty() && !name.isEmpty()) {
             ElementType element = createElementType(name);
             CardType cardType = createCardType(name);
             if ( element != null && cardType != null){
                 try {
                     Connection conn = DatabaseService.getInstance().getConnection();
-                    PreparedStatement ps = conn.prepareStatement("INSERT INTO cards(cardID, name, damage,element,type) VALUES(?,?,?,?,?);");
+                    PreparedStatement ps = conn.prepareStatement("INSERT INTO cards(cardid, name, damage) VALUES(?,?,?);");
                     ps.setString(1, id);
                     ps.setString(2, name);
                     ps.setFloat(3, damage);
-                    ps.setString(4, element.toString());
-                    ps.setString(5, cardType.toString());
                     int affectedRows = ps.executeUpdate();
                     ps.close();
                     conn.close();
@@ -154,7 +216,7 @@ public class CardManager {
     public void deleteCard(String id) {
         try {
             Connection conn = DatabaseService.getInstance().getConnection();
-            PreparedStatement ps = conn.prepareStatement("DELETE FROM cards WHERE cardid = ?");
+            PreparedStatement ps = conn.prepareStatement("DELETE FROM cards WHERE cardid = ? AND collection IS NULL");
             ps.setString(1, id);
             ps.executeUpdate();
             ps.close();

@@ -1,11 +1,3 @@
-import bif3.swe1.mtcg.cards.collections.CardPackage;
-import bif3.swe1.mtcg.Combat;
-import bif3.swe1.mtcg.User;
-import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertFalse;
