@@ -82,10 +82,7 @@ public class UserManager {
             int affectedRows = ps.executeUpdate();
             ps.close();
             conn.close();
-            if (affectedRows == 0) {
-                return false;
-            }
-            return true;
+            return affectedRows != 0;
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -153,7 +150,7 @@ public class UserManager {
     public String getScoreboard(){
         try {
             Connection conn = DatabaseService.getInstance().getConnection();
-            PreparedStatement ps = conn.prepareStatement("SELECT name, wins, games, elo FROM users WHERE username NOT LIKE 'admin' ORDER BY elo DESC;");
+            PreparedStatement ps = conn.prepareStatement("SELECT name, wins, games, elo FROM users WHERE name IS NOT NULL ORDER BY elo DESC;");
             ResultSet rs = ps.executeQuery();
             ps.close();
             ObjectMapper mapper = new ObjectMapper();

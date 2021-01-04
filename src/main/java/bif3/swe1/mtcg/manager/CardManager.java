@@ -14,6 +14,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.LinkedList;
 import java.util.List;
 
 public class CardManager {
@@ -224,5 +225,57 @@ public class CardManager {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    public boolean createDeck(User user, List<String> id){
+        if (id.size() != 4){
+            return false;
+        }
+        try {
+            Connection conn = DatabaseService.getInstance().getConnection();
+            // Check if user owns Cards
+            List<String> checkTwice = new LinkedList<>();
+            for (String cardID: id){
+                if (checkTwice.contains(cardID)){
+                    conn.close();
+                    return false;
+                }
+                checkTwice.add(cardID);
+                PreparedStatement ps = conn.prepareStatement("SELECT COUNT(cardid) FROM marketplace WHERE cardid = ?;");
+                ps.setString(1,cardID);
+                int affectedRows = ps.executeUpdate();
+                ps.close();
+                if (affectedRows > 0) {
+                    return false;
+                }
+                ps = conn.prepareStatement("SELECT COUNT(cardid) FROM cards WHERE cardid = ? AND owner = ?;");
+                ps.setString(1,cardID);
+                ps.setString(2,user.getUsername());
+                ResultSet rs = ps.executeQuery();
+                if (!rs.next() || rs.getInt(1) != 1) {
+                    ps.close();
+                    rs.close();
+                    conn.close();
+                    return false;
+                }
+            }
+            // Set all Cards to Stack
+            PreparedStatement ps = conn.prepareStatement("UPDATE cards SET collection = 'stack' WHERE owner = ?;");
+            ps.setString(1,user.getUsername());
+            ps.executeUpdate();
+            // Change Cards to Deck
+            for (String cardID: id){
+                ps = conn.prepareStatement("UPDATE cards SET collection = 'deck' WHERE owner = ? AND cardID = ?;");
+                ps.setString(1,user.getUsername());
+                ps.setString(2,cardID);
+                ps.executeUpdate();
+            }
+            ps.close();
+            conn.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
     }
 }

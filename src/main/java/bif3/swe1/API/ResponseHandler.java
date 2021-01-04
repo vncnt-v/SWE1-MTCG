@@ -33,7 +33,7 @@ public class ResponseHandler {
         ResponseContext response = new ResponseContext("400 Bad Request");
         if ( request != null && request.getHeader_values() != null /*&& request.getHeader_values().containsKey("content-type:") && request.getHeader_values().get("content-type:").equalsIgnoreCase("application/json")*/ ){
             String[] parts = request.getRequested().split("/");
-            User user = null;
+            User user;
             if ((parts.length == 2 || parts.length == 3)) {
                 switch (parts[1]){
                     case "delete":
@@ -134,27 +134,23 @@ public class ResponseHandler {
             response.setStatus("403 Forbidden");
             return response;
         }
-        switch (request.getHttp_verb()) {
-            case "DELETE":
-                try {
-                    Connection conn = DatabaseService.getInstance().getConnection();
-                    PreparedStatement ps = conn.prepareStatement("DELETE FROM packages;");
-                    ps.executeUpdate();
-                    ps = conn.prepareStatement("DELETE FROM cards;");
-                    ps.executeUpdate();
-                    ps = conn.prepareStatement("DELETE FROM users;");
-                    ps.executeUpdate();
-                    ps.close();
-                    conn.close();
-                    response.setStatus("200 OK");
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                    response.setStatus("409 Conflict");
-                    return response;
-                }
-                break;
-            default:
-                break;
+        if (request.getHttp_verb().equals("DELETE")) {
+            try {
+                Connection conn = DatabaseService.getInstance().getConnection();
+                PreparedStatement ps = conn.prepareStatement("DELETE FROM packages;");
+                ps.executeUpdate();
+                ps = conn.prepareStatement("DELETE FROM cards;");
+                ps.executeUpdate();
+                ps = conn.prepareStatement("DELETE FROM users;");
+                ps.executeUpdate();
+                ps.close();
+                conn.close();
+                response.setStatus("200 OK");
+            } catch (SQLException e) {
+                e.printStackTrace();
+                response.setStatus("409 Conflict");
+                return response;
+            }
         }
         return response;
     }
@@ -274,43 +270,39 @@ public class ResponseHandler {
     private ResponseContext packages(RequestContext request){
         CardManager manager = CardManager.getInstance();
         ResponseContext response = new ResponseContext("400 Bad Request");
-        switch (request.getHttp_verb()){
-            case "POST":
-                UserManager userManager = UserManager.getInstance();
-                if (request.getHeader_values().containsKey("authorization:") && !userManager.isAdmin(request.getHeader_values().get("authorization:"))){
-                    response.setStatus("403 Forbidden");
-                    return response;
-                }
-                ObjectMapper mapper = new ObjectMapper();
-                try {
-                    mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
-                    List<Card> cards = mapper.readValue(request.getPayload(), new TypeReference<>(){});
-                    if (cards.size() == 5){
-                        List<Card> createdCards = new ArrayList<>();
-                        for (Card card: cards){
-                            if (manager.registerCard(card.getId(),card.getName(),card.getDamage())) {
-                                createdCards.add(card);
-                            } else {
-                                for (Card card_tmp: createdCards){
-                                    manager.deleteCard(card_tmp.getId());
-                                }
-                                return response;
-                            }
-                        }
-                        if(manager.createPackage(cards)){
-                            response.setStatus("201 Created");
+        if (request.getHttp_verb().equals("POST")){
+            UserManager userManager = UserManager.getInstance();
+            if (request.getHeader_values().containsKey("authorization:") && !userManager.isAdmin(request.getHeader_values().get("authorization:"))){
+                response.setStatus("403 Forbidden");
+                return response;
+            }
+            ObjectMapper mapper = new ObjectMapper();
+            try {
+                mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+                List<Card> cards = mapper.readValue(request.getPayload(), new TypeReference<>(){});
+                if (cards.size() == 5){
+                    List<Card> createdCards = new ArrayList<>();
+                    for (Card card: cards){
+                        if (manager.registerCard(card.getId(),card.getName(),card.getDamage())) {
+                            createdCards.add(card);
                         } else {
                             for (Card card_tmp: createdCards){
                                 manager.deleteCard(card_tmp.getId());
                             }
+                            return response;
                         }
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    if(manager.createPackage(cards)){
+                        response.setStatus("201 Created");
+                    } else {
+                        for (Card card_tmp: createdCards){
+                            manager.deleteCard(card_tmp.getId());
+                        }
+                    }
                 }
-                break;
-            default:
-                break;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
         return response;
     }
@@ -318,43 +310,36 @@ public class ResponseHandler {
     private ResponseContext transactionsPackages(User user,RequestContext request){
         CardManager manager = CardManager.getInstance();
         ResponseContext response = new ResponseContext("400 Bad Request");
-        switch (request.getHttp_verb()) {
-            case "POST":
-                if (manager.acquirePackage2User(user)){
-                    response.setStatus("200 OK");
-                } else {
-                    response.setStatus("409 Conflict");
-                }
-                break;
-            default:
-                break;
+        if (request.getHttp_verb().equals("POST")) {
+            if (manager.acquirePackage2User(user)){
+                response.setStatus("200 OK");
+            } else {
+                response.setStatus("409 Conflict");
+            }
         }
         return response;
     }
 
     private ResponseContext showCards(User user,RequestContext request){
         ResponseContext response = new ResponseContext("400 Bad Request");
-        switch (request.getHttp_verb()) {
-            case "GET":
-                String json = CardManager.getInstance().showUserCards(user);
-                if (json != null){
-                    response.setStatus("200 OK");
-                    response.setPayload(json);
-                } else {
-                    response.setStatus("410 Error");
-                }
-                break;
-            default:
-                break;
+        if ("GET".equals(request.getHttp_verb())) {
+            String json = CardManager.getInstance().showUserCards(user);
+            if (json != null) {
+                response.setStatus("200 OK");
+                response.setPayload(json);
+            } else {
+                response.setStatus("410 Error");
+            }
         }
         return response;
     }
 
     private ResponseContext requestDeck(User user,RequestContext request){
         ResponseContext response = new ResponseContext("400 Bad Request");
+        CardManager manager = CardManager.getInstance();
         switch (request.getHttp_verb()) {
             case "GET":
-                String json = CardManager.getInstance().showUserDeck(user);
+                String json = manager.showUserDeck(user);
                 if (json != null){
                     response.setStatus("200 OK");
                     response.setPayload(json);
@@ -367,7 +352,7 @@ public class ResponseHandler {
                 try {
                     List<String> ids = mapper.readValue(request.getPayload(), new TypeReference<>(){});
                     if (ids.size() == 4){
-                        if (user.createDeck(ids)){
+                        if (manager.createDeck(user,ids)){
                             response.setStatus("200 OK");
                         }
                     }
@@ -383,13 +368,9 @@ public class ResponseHandler {
 
     private ResponseContext stats(User user,RequestContext request){
         ResponseContext response = new ResponseContext("400 Bad Request");
-        switch (request.getHttp_verb()) {
-            case "GET":
-                response.setStatus("200 OK");
-                response.setPayload(user.getStats());
-                break;
-            default:
-                break;
+        if ("GET".equals(request.getHttp_verb())) {
+            response.setStatus("200 OK");
+            response.setPayload(user.getStats());
         }
         return response;
     }
@@ -397,13 +378,9 @@ public class ResponseHandler {
     private ResponseContext scoreboard(RequestContext request){
         UserManager manager = UserManager.getInstance();
         ResponseContext response = new ResponseContext("400 Bad Request");
-        switch (request.getHttp_verb()) {
-            case "GET":
-                response.setPayload(manager.getScoreboard());
-                response.setStatus("200 OK");
-                break;
-            default:
-                break;
+        if ("GET".equals(request.getHttp_verb())) {
+            response.setPayload(manager.getScoreboard());
+            response.setStatus("200 OK");
         }
         return response;
     }
@@ -414,28 +391,30 @@ public class ResponseHandler {
         String[] parts;
         switch (request.getHttp_verb()) {
             case "GET":
-                //response.setPayload(manager.showMarktplace());
+                response.setPayload(manager.showMarketplace());
                 response.setStatus("200 OK");
                 break;
             case "POST":
                 parts = request.getRequested().split("/");
+                ObjectMapper mapper = new ObjectMapper();
                 if (parts.length == 3){
-                    String[] card_parts = request.getPayload().split("\"");
-                    if (card_parts.length == 2){
-                        //if (manager.tradeCard(user,parts[2],card_parts[1])){
-                         //   response.setStatus("200 OK");
-                        //}
-                    }
-                } else {
-                    // JSON
-                    ObjectMapper mapper = new ObjectMapper();
                     try {
                         JsonNode jsonNode = mapper.readTree(request.getPayload());
-                        if ( jsonNode.has("Id") && jsonNode.has("CardToTrade") && jsonNode.has("Type") && jsonNode.has("MinimumDamage")){
-                            //manager.card2market(user,jsonNode.get("Id").asText(),jsonNode.get("CardToTrade").asText(),jsonNode.get("MonsterType").asText(),(float)jsonNode.get("MinimumDamage").asDouble());
-                            //public boolean card2market(User user, String tradeID, String cardID, ElementType element, MonsterType monster, float minimumDamage, float minimumWeakness){
-
+                        if (jsonNode.has("Card2Trade")){
+                            if (manager.tradeCards(user,parts[2],jsonNode.get("Card2Trade").asText())){
                                 response.setStatus("200 OK");
+                            }
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    try {
+                        JsonNode jsonNode = mapper.readTree(request.getPayload());
+                        if (jsonNode.has("Id") && jsonNode.has("CardToTrade") && jsonNode.has("Type") && jsonNode.has("MinimumDamage")){
+                            if (manager.card2market(user,jsonNode.get("Id").asText(),jsonNode.get("CardToTrade").asText(),(float)jsonNode.get("MinimumDamage").asDouble(),jsonNode.get("Type").asText())){
+                                response.setStatus("200 OK");
+                            }
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -445,9 +424,9 @@ public class ResponseHandler {
             case "DELETE":
                 parts = request.getRequested().split("/");
                 if (parts.length == 3){
-                    //if (manager.removeTrade(parts[2],user)){
-                    //    response.setStatus("200 OK");
-                    //}
+                    if (manager.removeTrade(user,parts[2])){
+                        response.setStatus("200 OK");
+                    }
                 }
                 break;
             default:

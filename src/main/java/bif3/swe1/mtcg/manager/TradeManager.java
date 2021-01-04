@@ -1,15 +1,20 @@
 package bif3.swe1.mtcg.manager;
 
-import bif3.swe1.mtcg.TradingDeal;
+import bif3.swe1.database.DatabaseService;
+import bif3.swe1.mtcg.User;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class TradeManager {
 
     private static TradeManager single_instance = null;
-
-    private List<TradingDeal> trades = new ArrayList<>();
 
     public static TradeManager getInstance()
     {
@@ -18,71 +23,109 @@ public class TradeManager {
         }
         return single_instance;
     }
-/*
-    public boolean card2market(User user, String tradeID, String cardID, ElementType element, CardType monster, float minimumDamage, float minimumWeakness){
-        Card card = user.getStackCard(cardID);
-        if (card == null){
-            return false;
+
+    public String showMarketplace(){
+        try {
+            Connection conn = DatabaseService.getInstance().getConnection();
+            PreparedStatement ps = conn.prepareStatement("SELECT * FROM marketplace;");
+            ResultSet rs = ps.executeQuery();
+            ps.close();
+            ObjectMapper mapper = new ObjectMapper();
+            ArrayNode arrayNode = mapper.createArrayNode();
+            while (rs.next()){
+                ObjectNode deal = mapper.createObjectNode();
+                deal.put("TradeID",rs.getString(1));
+                deal.put("CardID",rs.getString(2));
+                deal.put("MinimumDamage",rs.getString(3));
+                deal.put("Type",rs.getString(4));
+                arrayNode.add(deal);
+            }
+            rs.close();
+            conn.close();
+            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(arrayNode);
+        } catch (SQLException | JsonProcessingException e) {
+            e.printStackTrace();
+            return null;
         }
-        for (TradingDeal content : trades){
-            if (content.getTradeID().equals(tradeID)){
-                user.addCard(card);
+    }
+
+
+    public boolean removeTrade(User user, String id){
+        try {
+            Connection conn = DatabaseService.getInstance().getConnection();
+            PreparedStatement ps = conn.prepareStatement("DELETE marketplace WHERE cardid = ? AND owner = ?;");
+            ps.setString(1, id);
+            ps.setString(2, user.getUsername());
+            int affectedRows = ps.executeUpdate();
+            ps.close();
+            if (affectedRows != 1) {
+                conn.close();
                 return false;
             }
+            ps = conn.prepareStatement("UPDATE cards SET collection = 'stack' WHERE cardid = ?;");
+            ps.setString(1, id);
+            affectedRows = ps.executeUpdate();
+            ps.close();
+            conn.close();
+            return affectedRows == 1;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
         }
-        TradingDeal content = new TradingDeal(tradeID,user.getUsername(),card,element,monster,minimumDamage,minimumWeakness);
-        trades.add(content);
-        return true;
     }
 
-    public String showMarktplace(){
-        if (trades.size() <= 0){
-            return "Marketplace empty\r\n";
-        }
-        String payload = "";
-        // ToDo JSON
-        for (int i = 0; i < trades.size(); i++){
-            payload += (i+1) + ")\r\n";
-            payload += "    TradeID: " + trades.get(i).getTradeID() + "\r\n";
-            payload += "    From: " + trades.get(i).getUsername() + "\r\n";
-            payload += "    CardID: " + trades.get(i).getCard().getId() + "\r\n";
-            payload += "    Name: " + trades.get(i).getCard().getName() + "\r\n";
-            payload += "    Damage: " + trades.get(i).getCard().getDamage() + "\r\n";
-            /*if (trades.get(i).getCard() instanceof Spell){
-                payload += "    Weakness: " + trades.get(i).getCard().getDamage() + "\r\n";
+    public boolean card2market(User user, String tradeID, String cardID, float minimumDamage, String type){
+        try {
+            // Check if user owns card
+            // ToDo maktplace check in cards? check if card is on marketplace
+            Connection conn = DatabaseService.getInstance().getConnection();
+            PreparedStatement ps = conn.prepareStatement("SELECT COUNT(cardid) FROM cards WHERE owner = ? AND cardid = ? AND collection LIKE 'stack';");
+            ps.setString(1, user.getUsername());
+            ps.setString(2, cardID);
+            int affectedRows = ps.executeUpdate();
+            ps.close();
+            if (affectedRows != 1) {
+                conn.close();
+                return false;
             }
-            if (trades.get(i).getMonster() == null){
-                payload += "    Wanted Card: Spell\r\n";
-                payload += "    Wanted Element: " + trades.get(i).getElement() + "\r\n";
-                payload += "    Minimum Damage: " + trades.get(i).getMinimumDamage() + "\r\n";
-                payload += "    Minimum Weakness: " + trades.get(i).getMinimumWeakness() + "\r\n";
-            } else {
-                payload += "    Wanted Card: " + trades.get(i).getMonster() + "\r\n";
-                payload += "    Wanted Element: " + trades.get(i).getElement() + "\r\n";
-                payload += "    Minimum Damage: " + trades.get(i).getMinimumDamage() + "\r\n";
+            // Insert Marketplace
+            ps = conn.prepareStatement("INSERT INTO marketplace(tradeid, cardid, mindamage, type) VALUES(?,?,?,?);");
+            ps.setString(1, tradeID);
+            ps.setString(2, cardID);
+            ps.setFloat(3, minimumDamage);
+            ps.setString(4, type);
+            affectedRows = ps.executeUpdate();
+            ps.close();
+            if (affectedRows != 1) {
+                return false;
             }
-        }
-        return payload;
-    }
-
-    public boolean removeTrade(String tradeID, User user){
-        for (int i = 0; i < trades.size(); i++){
-            if (trades.get(i).getTradeID().equals(tradeID)){
-                if (trades.get(i).getUsername().equals(user.getUsername())){
-                    user.addCard(trades.get(i).getCard());
-                    trades.remove(i);
-                    return true;
-                }
-
-            }
+            ps = conn.prepareStatement("UPDATE cards SET collection = 'marketplace' WHERE cardid = ?;");
+            ps.setString(1, cardID);
+            ps.executeUpdate();
+            ps.close();
+            conn.close();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
         return false;
     }
 
-    public boolean tradeCard(User user, String tradeID, String cardID){
+    public boolean tradeCards(User user, String tradeID, String cardID){
         if (user == null){
             return false;
         }
+        // ToDo
+        // SQL get Card with ID from CardManager
+        // check if Card Type with CardManager
+        // check if damage is big enough
+        // Change cards owner 2x
+        // Delete marketplace entry
+
+
+
+
+        /*
         for (TradingDeal trade:trades){
             if (trade.getTradeID().equals(tradeID)){
                 if (trade.getUsername().equals(user.getUsername())){
@@ -124,7 +167,7 @@ public class TradeManager {
                 return false;
             }
         }
+        */
         return false;
     }
-    */
 }
