@@ -163,20 +163,32 @@ public class CombatManager {
                 }
             }
         }
+        if (card2.getCardType() == CardType.Kraken){
+            return 0;
+        }
         switch (card1.getElementType()){
             case water:
                 if (card2.getElementType() == ElementType.fire){
                     return card1.getDamage() * 2;
+                }
+                if (card2.getElementType() == ElementType.normal){
+                    return card1.getDamage() / 2;
                 }
                 break;
             case fire:
                 if (card2.getElementType() == ElementType.normal){
                     return card1.getDamage() * 2;
                 }
+                if (card2.getElementType() == ElementType.water){
+                    return card1.getDamage() / 2;
+                }
                 break;
             default:
                 if (card2.getElementType() == ElementType.water){
                     return card1.getDamage() * 2;
+                }
+                if (card2.getElementType() == ElementType.fire){
+                    return card1.getDamage() / 2;
                 }
                 break;
         }
