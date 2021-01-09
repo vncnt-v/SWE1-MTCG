@@ -1,4 +1,4 @@
-package bif3.swe1.API.context;
+package bif3.swe1.server.context;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;

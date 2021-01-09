@@ -1,6 +1,6 @@
-package bif3.swe1.API;
+package bif3.swe1.server;
 
-import bif3.swe1.API.context.RequestContext;
+import bif3.swe1.server.context.RequestContext;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,7 +15,7 @@ public class Unwrapper {
     }
 
     public RequestContext unwarp() {
-        RequestContext request = null;
+        RequestContext request;
         try {
             // header
             request = readHttpHeader(reader);

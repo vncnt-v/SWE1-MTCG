@@ -1,14 +1,12 @@
-package bif3.swe1.mtcg.cards.collections;
+package bif3.swe1.mtcg.collections;
 
-import bif3.swe1.mtcg.cards.Card;
-import lombok.Getter;
+import bif3.swe1.mtcg.Card;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Deck {
 
-    @Getter
     private List<Card> cards = new ArrayList<>();
 
     public Deck (List<Card> deck) {
@@ -20,8 +18,14 @@ public class Deck {
     }
 
     public void removeCard (Card card){
-        if (cards != null && cards.contains(card)){
+        if (cards != null){
             cards.remove(card);
+        }
+    }
+
+    public void addCard (Card card){
+        if (!cards.contains(card)){
+            cards.add(card);
         }
     }
 
@@ -30,5 +34,16 @@ public class Deck {
             return cards.get((int)(Math.random() * cards.size()));
         }
         return null;
+    }
+
+    public boolean isEmpty(){
+        return cards.isEmpty();
+    }
+
+    public int getSize(){
+        if (!isEmpty()){
+            return cards.size();
+        }
+        return 0;
     }
 }

@@ -1,10 +1,11 @@
-package bif3.swe1.mtcg.manager;
+package bif3.swe1.mtcg.managers;
 
 import bif3.swe1.database.DatabaseService;
 import bif3.swe1.mtcg.User;
-import bif3.swe1.mtcg.cards.Card;
-import bif3.swe1.mtcg.cards.types.CardType;
-import bif3.swe1.mtcg.cards.types.ElementType;
+import bif3.swe1.mtcg.Card;
+import bif3.swe1.mtcg.collections.Deck;
+import bif3.swe1.mtcg.types.CardType;
+import bif3.swe1.mtcg.types.ElementType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -14,6 +15,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -156,7 +158,7 @@ public class CardManager {
         return true;
     }
 
-    private ElementType createElementType (String element){
+    public ElementType createElementType (String element){
         if (element.toLowerCase().contains("water")){
             return ElementType.water;
         } else if (element.toLowerCase().contains("fire")){
@@ -166,7 +168,7 @@ public class CardManager {
         }
     }
 
-    private CardType createCardType (String name){
+    public CardType createCardType (String name){
         if (name.toLowerCase().contains("spell")){
             return CardType.Spell;
         } else if (name.toLowerCase().contains("dragon")){
@@ -185,6 +187,28 @@ public class CardManager {
             return CardType.Wizard;
         }
         return null;
+    }
+
+    public Deck getDeckUser (User user){
+        Deck deck = null;
+        try {
+            Connection conn = DatabaseService.getInstance().getConnection();
+            PreparedStatement ps = conn.prepareStatement("SELECT cardID, name, damage FROM cards WHERE owner = ? AND collection = 'deck';");
+            ps.setString(1, user.getUsername());
+            ResultSet rs = ps.executeQuery();
+            ps.close();
+            List<Card> cards = new ArrayList<>();
+            while (rs.next()) {
+                String name = rs.getString(2);
+                cards.add(new Card(rs.getString(1), name, rs.getFloat(3),createCardType(name),createElementType(name)));
+            }
+            deck = new Deck(cards);
+            rs.close();
+            conn.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return deck;
     }
 
     public boolean registerCard(String id, String name, float damage) {
@@ -241,14 +265,10 @@ public class CardManager {
                     return false;
                 }
                 checkTwice.add(cardID);
-                PreparedStatement ps = conn.prepareStatement("SELECT COUNT(cardid) FROM marketplace WHERE cardid = ?;");
-                ps.setString(1,cardID);
-                int affectedRows = ps.executeUpdate();
-                ps.close();
-                if (affectedRows > 0) {
+                if (TradeManager.getInstance().marketplaceContains(cardID)){
                     return false;
                 }
-                ps = conn.prepareStatement("SELECT COUNT(cardid) FROM cards WHERE cardid = ? AND owner = ?;");
+                PreparedStatement ps = conn.prepareStatement("SELECT COUNT(cardid) FROM cards WHERE cardid = ? AND owner = ?;");
                 ps.setString(1,cardID);
                 ps.setString(2,user.getUsername());
                 ResultSet rs = ps.executeQuery();

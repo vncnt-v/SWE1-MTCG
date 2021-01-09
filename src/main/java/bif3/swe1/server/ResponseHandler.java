@@ -1,12 +1,13 @@
-package bif3.swe1.API;
-import bif3.swe1.API.context.RequestContext;
-import bif3.swe1.API.context.ResponseContext;
+package bif3.swe1.server;
+import bif3.swe1.server.context.RequestContext;
+import bif3.swe1.server.context.ResponseContext;
 import bif3.swe1.database.DatabaseService;
 import bif3.swe1.mtcg.*;
-import bif3.swe1.mtcg.cards.Card;
-import bif3.swe1.mtcg.manager.CardManager;
-import bif3.swe1.mtcg.manager.TradeManager;
-import bif3.swe1.mtcg.manager.UserManager;
+import bif3.swe1.mtcg.Card;
+import bif3.swe1.mtcg.managers.CardManager;
+import bif3.swe1.mtcg.managers.CombatManager;
+import bif3.swe1.mtcg.managers.TradeManager;
+import bif3.swe1.mtcg.managers.UserManager;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.MapperFeature;
@@ -104,7 +105,7 @@ public class ResponseHandler {
                     case "battles":
                         user = authorize(request);
                         if (user != null){
-                            //response = battle(request,user);
+                            response = battle(request,user);
                         } else {
                             response = new ResponseContext("401 Unauthorized");
                         }
@@ -130,14 +131,16 @@ public class ResponseHandler {
     private ResponseContext deleteAll(RequestContext request){
         ResponseContext response = new ResponseContext("400 Bad Request");
         UserManager userManager = UserManager.getInstance();
-        if (request.getHeader_values().containsKey("authorization:") && !userManager.isAdmin(request.getHeader_values().get("authorization:"))){
+        /*if (request.getHeader_values().containsKey("authorization:") && !userManager.isAdmin(request.getHeader_values().get("authorization:"))){
             response.setStatus("403 Forbidden");
             return response;
-        }
+        }*/
         if (request.getHttp_verb().equals("DELETE")) {
             try {
                 Connection conn = DatabaseService.getInstance().getConnection();
                 PreparedStatement ps = conn.prepareStatement("DELETE FROM packages;");
+                ps.executeUpdate();
+                ps = conn.prepareStatement("DELETE FROM marketplace;");
                 ps.executeUpdate();
                 ps = conn.prepareStatement("DELETE FROM cards;");
                 ps.executeUpdate();
@@ -166,7 +169,6 @@ public class ResponseHandler {
                 if (user != null){
                     String[] parts = request.getRequested().split("/");
                     if (parts.length == 3){
-                        System.out.println(user.getUsername() + " - " + parts[2]);
                         if (user.getUsername().equals(parts[2])){
                             response.setPayload(user.getInfo());
                             if (response.getPayload() != null){
@@ -188,7 +190,7 @@ public class ResponseHandler {
                     JsonNode jsonNode = mapper.readTree(request.getPayload());
                     if ( jsonNode.has("Username") && jsonNode.has("Password")){
                         if (manager.registerUser(jsonNode.get("Username").asText(),jsonNode.get("Password").asText())) {
-                            response.setStatus("200 OK");
+                            response.setStatus("201 Created");
                         } else {
                             response.setStatus("409 Conflict");
                         }
@@ -207,14 +209,12 @@ public class ResponseHandler {
                             try {
                                 JsonNode jsonNode = mapper.readTree(request.getPayload());
                                 if ( jsonNode.has("Name") && jsonNode.has("Bio") && jsonNode.has("Image")){
-                                    if (manager.setUserInfo(user,jsonNode.get("Name").asText(),jsonNode.get("Bio").asText(),jsonNode.get("Image").asText())){
+                                    if (user.setUserInfo(jsonNode.get("Name").asText(),jsonNode.get("Bio").asText(),jsonNode.get("Image").asText())){
                                         response.setStatus("200 OK");
                                     } else {
                                         response.setStatus("404 Not Found");
                                     }
-                                    System.out.println("he - 4");
                                 }
-                                System.out.println("he - 3");
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
@@ -353,7 +353,7 @@ public class ResponseHandler {
                     List<String> ids = mapper.readValue(request.getPayload(), new TypeReference<>(){});
                     if (ids.size() == 4){
                         if (manager.createDeck(user,ids)){
-                            response.setStatus("200 OK");
+                            response.setStatus("201 Created");
                         }
                     }
                 } catch (IOException e) {
@@ -376,7 +376,7 @@ public class ResponseHandler {
     }
 
     private ResponseContext scoreboard(RequestContext request){
-        UserManager manager = UserManager.getInstance();
+        CombatManager manager = CombatManager.getInstance();
         ResponseContext response = new ResponseContext("400 Bad Request");
         if ("GET".equals(request.getHttp_verb())) {
             response.setPayload(manager.getScoreboard());
@@ -413,7 +413,7 @@ public class ResponseHandler {
                         JsonNode jsonNode = mapper.readTree(request.getPayload());
                         if (jsonNode.has("Id") && jsonNode.has("CardToTrade") && jsonNode.has("Type") && jsonNode.has("MinimumDamage")){
                             if (manager.card2market(user,jsonNode.get("Id").asText(),jsonNode.get("CardToTrade").asText(),(float)jsonNode.get("MinimumDamage").asDouble(),jsonNode.get("Type").asText())){
-                                response.setStatus("200 OK");
+                                response.setStatus("201 Created");
                             }
                         }
                     } catch (IOException e) {
@@ -431,6 +431,19 @@ public class ResponseHandler {
                 break;
             default:
                 break;
+        }
+        return response;
+    }
+
+    private ResponseContext battle(RequestContext request,User user){
+        ResponseContext response = new ResponseContext("400 Bad Request");
+        if ("POST".equals(request.getHttp_verb())) {
+            CombatManager manager = CombatManager.getInstance();
+            String payload = manager.addUser(user);
+            if (payload != null){
+                response.setPayload(payload);
+                response.setStatus("200 OK");
+            }
         }
         return response;
     }

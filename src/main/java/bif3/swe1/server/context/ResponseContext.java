@@ -1,4 +1,4 @@
-package bif3.swe1.API.context;
+package bif3.swe1.server.context;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,9 +13,9 @@ public class ResponseContext {
     @Getter
     private String server;
     @Getter
+    @Setter
     private String contentType;
     @Getter
-    @Setter
     private int contentLength;
     @Getter
     private String payload;
@@ -29,12 +29,8 @@ public class ResponseContext {
         payload = "";
     }
 
-    public boolean setPayload(String payload){
+    public void setPayload(String payload){
         this.payload = payload;
         contentLength = payload.length();
-        if (contentLength > 0){
-            return true;
-        }
-        return false;
     }
 }

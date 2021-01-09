@@ -6,26 +6,25 @@ import lombok.Getter;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 public class User {
 
     @Getter
     private final String username;
+    @Getter
     private final String name;
     private final String bio;
     private final String image;
     private final Integer coins;
-    private final int games;
-    private final int wins;
+    private int games;
+    private int wins;
+    private int elo;
 
 
-    public User(String username, String name, String bio, String image, int coins, int games, int wins){
+    public User(String username, String name, String bio, String image, int coins, int games, int wins, int elo){
         this.username = username;
         this.name = name;
         this.bio = bio;
@@ -33,6 +32,7 @@ public class User {
         this.coins = coins;
         this.games = games;
         this.wins = wins;
+        this.elo = elo;
     }
 
     public String getInfo(){
@@ -74,6 +74,58 @@ public class User {
             ps.close();
             conn.close();
             return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean battleWon(){
+        wins++;
+        games++;
+        elo+=3;
+        return saveStats();
+    }
+    public boolean battleLost(){
+        games++;
+        elo-=5;
+        return saveStats();
+    }
+    public boolean battleDraw(){
+        games++;
+        return saveStats();
+    }
+    public boolean saveStats(){
+        try {
+            Connection conn = DatabaseService.getInstance().getConnection();
+            PreparedStatement ps = conn.prepareStatement("UPDATE users SET wins = ?, games = ?, elo = ? WHERE username = ?;");
+            ps.setInt(1,wins);
+            ps.setInt(2,games);
+            ps.setInt(3,elo);
+            ps.setString(4,username);
+            ps.executeUpdate();
+            ps.close();
+            conn.close();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    public boolean setUserInfo(String name, String bio, String image){
+        try {
+            Connection conn = DatabaseService.getInstance().getConnection();
+            PreparedStatement ps = conn.prepareStatement("UPDATE users SET name = ?, bio = ?, image = ? WHERE username = ?;");
+            ps.setString(1, name);
+            ps.setString(2, bio);
+            ps.setString(3, image);
+            ps.setString(4, username);
+            int affectedRows = ps.executeUpdate();
+            ps.close();
+            conn.close();
+            if (affectedRows == 1) {
+                return true;
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
