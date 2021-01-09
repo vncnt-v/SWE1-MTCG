@@ -75,22 +75,24 @@ public class CombatManager {
         try {
             ObjectMapper mapper = new ObjectMapper();
             ArrayNode arrayNode = mapper.createArrayNode();
-            ObjectNode round = mapper.createObjectNode();
             while (!deck1.isEmpty() && !deck2.isEmpty() && ++turns <= 100){
+                ObjectNode round = mapper.createObjectNode();
                 Card card1 = deck1.getRandomCard();
                 Card card2 = deck2.getRandomCard();
                 float damage1 = calculateDamage(card1,card2);
                 float damage2 = calculateDamage(card2,card1);
-
+                // Logging
                 round.put("Round",turns);
-                round.put("User1",user1.getName());
-                round.put("Deck1",deck1.getSize());
-                round.put("Card1",card1.getName());
-                round.put("Damage1",damage1);
-                round.put("User2",user2.getName());
-                round.put("Deck2",deck2.getSize());
-                round.put("Card2",card2.getName());
-                round.put("Damage2",damage2);
+                round.put("User_1",user1.getName());
+                round.put("User_2",user2.getName());
+                round.put("DeckSizeBefore_1",deck1.getSize());
+                round.put("DeckSizeBefore_2",deck2.getSize());
+                round.put("CardID_1",card1.getName());
+                round.put("CardID_2",card2.getName());
+                round.put("CardName_1",card1.getName());
+                round.put("CardName_2",card2.getName());
+                round.put("CardDamage_1",damage1);
+                round.put("CardDamage_2",damage2);
 
                 if (damage1 > damage2){
                     deck2.removeCard(card2);
@@ -103,6 +105,8 @@ public class CombatManager {
                 } else {
                     round.put("Won","Draw");
                 }
+                round.put("DeckSizeAfter_1",deck1.getSize());
+                round.put("DeckSizeAfter_2",deck2.getSize());
                 arrayNode.add(round);
             }
             response = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(arrayNode);
