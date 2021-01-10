@@ -134,8 +134,8 @@ public class CombatManager {
 
     public float calculateDamage(Card card1, Card card2){
         if (card1.getCardType() == CardType.magicdice){
-            Random rand = new Random(6);
-            if (rand.nextInt() > 3){
+            Random rand = new Random();
+            if (rand.nextInt(6) > 3){
                 return 999;
             }
         }
