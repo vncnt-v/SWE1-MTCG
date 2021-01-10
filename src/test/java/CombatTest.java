@@ -1,27 +1,69 @@
+import bif3.swe1.mtcg.Card;
 import bif3.swe1.mtcg.User;
 import bif3.swe1.mtcg.collections.Deck;
 import bif3.swe1.mtcg.managers.CombatManager;
+import bif3.swe1.mtcg.types.CardType;
+import bif3.swe1.mtcg.types.ElementType;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-//@ExtendWith(MockitoExtension.class)
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+
+@ExtendWith(MockitoExtension.class)
 public class CombatTest {
+
+    @Mock
+    User userA;
+    @Mock
+    User userB;
+
+    Deck deck_0;
+
+    @BeforeEach
+    void setUp() {
+        Card card1 = new Card ("1","Kraken_0",0, CardType.Kraken, ElementType.water);
+        Card card2 = new Card ("2","Kraken_0",0, CardType.Kraken, ElementType.water);
+        Card card3 = new Card ("3","Kraken_0",0, CardType.Kraken, ElementType.water);
+        Card card4 = new Card ("4","Kraken_0",0, CardType.Kraken, ElementType.water);
+        List<Card> cards = new ArrayList<>();
+        cards.add(card1);
+        cards.add(card2);
+        cards.add(card3);
+        cards.add(card4);
+        deck_0 = new Deck(cards);
+    }
+
     @Test
-    public void testDraw() {
-        /*
+    public void drawCombatTest() {
         CombatManager manager = CombatManager.getInstance();
-        @Mock User userA;
-        @Mock User userB;
-        @Mock Deck card;
-        @Mock Deck deck;
         when(userA.getName()).thenReturn("MockUser_1");
         when(userB.getName()).thenReturn("MockUser_2");
-        when(deck.getSize()).thenReturn(1);
-        when(deckB.getSize()).thenReturn(1);
+        manager.battle(userA,userB,deck_0,deck_0);
+        verify(userA).battleDraw();
+        verify(userB).battleDraw();
+    }
 
-        when(deckA.getRandomCard()).thenReturn(1);
-        when(deckB.getRandomCard()).thenReturn(1);
-        String response = manager.battle(userA,userB,deckA,deckB);
-        assertEquals(Optional.empty(), combat.getWinner(), "There should not be a winner!");*/
+    @Test
+    public void winCombatTest() {
+        CombatManager manager = CombatManager.getInstance();
+        Card card = new Card ("2","Kraken_30",30, CardType.Kraken, ElementType.water);
+        List<Card> cards = new ArrayList<>();
+        cards.add(card);
+        cards.add(card);
+        cards.add(card);
+        cards.add(card);
+        Deck deck_1 = new Deck(cards);
+        when(userA.getName()).thenReturn("MockUser_1");
+        when(userB.getName()).thenReturn("MockUser_2");
+        manager.battle(userA,userB,deck_0,deck_1);
+        verify(userA).battleLost();
+        verify(userB).battleWon();
     }
 }

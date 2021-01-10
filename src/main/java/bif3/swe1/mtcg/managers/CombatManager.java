@@ -24,7 +24,7 @@ public class CombatManager {
     private User user2;
     private String response;
     private boolean working = false;
-    Object LOCK = new Object();
+    final Object LOCK = new Object();
 
     public static CombatManager getInstance()
     {
@@ -90,8 +90,8 @@ public class CombatManager {
                 round.put("User_2",user2.getName());
                 round.put("DeckSizeBefore_1",deck1.getSize());
                 round.put("DeckSizeBefore_2",deck2.getSize());
-                round.put("CardID_1",card1.getName());
-                round.put("CardID_2",card2.getName());
+                round.put("CardID_1",card1.getId());
+                round.put("CardID_2",card2.getId());
                 round.put("CardName_1",card1.getName());
                 round.put("CardName_2",card2.getName());
                 round.put("CardDamage_1",damage1);
@@ -114,12 +114,12 @@ public class CombatManager {
             }
             log = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(arrayNode);
             if (deck1.isEmpty()){
-                user1.battleWon();
-                user2.battleLost();
-                return log;
-            } else if (deck2.isEmpty()){
                 user1.battleLost();
                 user2.battleWon();
+                return log;
+            } else if (deck2.isEmpty()){
+                user1.battleWon();
+                user2.battleLost();
                 return log;
             }
             user1.battleDraw();
@@ -163,31 +163,31 @@ public class CombatManager {
         if (card2.getCardType() == CardType.Kraken){
             return 0;
         }
-        switch (card1.getElementType()){
-            case water:
-                if (card2.getElementType() == ElementType.fire){
+        switch (card1.getElementType()) {
+            case water -> {
+                if (card2.getElementType() == ElementType.fire) {
                     return card1.getDamage() * 2;
                 }
-                if (card2.getElementType() == ElementType.normal){
+                if (card2.getElementType() == ElementType.normal) {
                     return card1.getDamage() / 2;
                 }
-                break;
-            case fire:
-                if (card2.getElementType() == ElementType.normal){
+            }
+            case fire -> {
+                if (card2.getElementType() == ElementType.normal) {
                     return card1.getDamage() * 2;
                 }
-                if (card2.getElementType() == ElementType.water){
+                if (card2.getElementType() == ElementType.water) {
                     return card1.getDamage() / 2;
                 }
-                break;
-            default:
-                if (card2.getElementType() == ElementType.water){
+            }
+            default -> {
+                if (card2.getElementType() == ElementType.water) {
                     return card1.getDamage() * 2;
                 }
-                if (card2.getElementType() == ElementType.fire){
+                if (card2.getElementType() == ElementType.fire) {
                     return card1.getDamage() / 2;
                 }
-                break;
+            }
         }
         return card1.getDamage();
     }
