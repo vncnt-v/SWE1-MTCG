@@ -51,7 +51,10 @@ public class CombatManager {
             return response;
         } else if (user2 == null){
             user2 = user;
-            battle();
+            CardManager manager = new CardManager();
+            Deck deck1 = manager.getDeckUser(user1);
+            Deck deck2 = manager.getDeckUser(user2);
+            response = battle(user1,user2,deck1,deck2);
             working = false;
             synchronized (LOCK) {
                 LOCK.notifyAll();
@@ -63,18 +66,18 @@ public class CombatManager {
         return null;
     }
 
-    public void battle(){
-        CardManager manager = new CardManager();
-        Deck deck1 = manager.getDeckUser(user1);
-        Deck deck2 = manager.getDeckUser(user2);
-        int turns = 0;
-        if ( deck1 == null || deck2 == null) {
-            clear();
-            return;
+    public String battle(User user1, User user2, Deck deck1, Deck deck2){
+        if (user1 == null || user2 == null || deck1 == null || deck2 == null){
+            this.user1 = null;
+            this.user2 = null;
+            this.response = null;
+            return null;
         }
+        int turns = 0;
         try {
             ObjectMapper mapper = new ObjectMapper();
             ArrayNode arrayNode = mapper.createArrayNode();
+            String log;
             while (!deck1.isEmpty() && !deck2.isEmpty() && ++turns <= 100){
                 ObjectNode round = mapper.createObjectNode();
                 Card card1 = deck1.getRandomCard();
@@ -109,29 +112,23 @@ public class CombatManager {
                 round.put("DeckSizeAfter_2",deck2.getSize());
                 arrayNode.add(round);
             }
-            response = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(arrayNode);
+            log = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(arrayNode);
             if (deck1.isEmpty()){
                 user1.battleWon();
                 user2.battleLost();
-                return;
+                return log;
             } else if (deck2.isEmpty()){
                 user1.battleLost();
                 user2.battleWon();
-                return;
+                return log;
             }
             user1.battleDraw();
             user2.battleDraw();
-            return;
+            return log;
         }  catch (JsonProcessingException e) {
             e.printStackTrace();
         }
-        response = null;
-    }
-
-    public void clear(){
-        user1 = null;
-        user2 = null;
-        response = null;
+        return null;
     }
 
     public float calculateDamage(Card card1, Card card2){
