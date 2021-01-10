@@ -1,123 +1,134 @@
 package bif3.swe1.mtcg;
-
-import bif3.swe1.mtcg.cards.AbstractCard;
-import lombok.Setter;
+import bif3.swe1.database.DatabaseService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class User {
 
     @Getter
     private final String username;
-    private final String pwd;
-    @Setter
     @Getter
-    private String name;
-    @Setter
-    @Getter
-    private String bio;
-    @Setter
-    @Getter
-    private String image;
+    private final String name;
+    private final String bio;
+    private final String image;
+    private final Integer coins;
+    private int games;
+    private int wins;
+    private int elo;
 
-    private int coins;
-    @Getter
-    private Deck deck;
-    @Getter
-    private Stack stack;
-    @Getter
-    private int count_of_games;
-    @Getter
-    private int count_of_wins;
 
-    public User(String username, String pwd){
+    public User(String username, String name, String bio, String image, int coins, int games, int wins, int elo){
         this.username = username;
-        this.pwd = pwd;
-        this.coins = 20;
-        this.count_of_games = 0;
-        this.count_of_wins = 0;
-        this.stack = new Stack();
-        this.name = "";
-        this.bio = "";
-        this.image = "";
+        this.name = name;
+        this.bio = bio;
+        this.image = image;
+        this.coins = coins;
+        this.games = games;
+        this.wins = wins;
+        this.elo = elo;
     }
 
-    public boolean BuyPackage(CardPackage pck){
-        if (coins < 5){
-            return false;
+    public String getInfo(){
+        try {
+            Map<String,String> map = new HashMap<>();
+            map.put("Name:",name);
+            map.put("Bio:",bio);
+            map.put("Image:",image);
+            map.put("Coins:",coins.toString());
+            return new ObjectMapper().writeValueAsString(map);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
         }
-        stack.AddPackage(pck);
-        coins -= 5;
-        return true;
+        return null;
     }
 
-    public AbstractCard Draw(){
-        if (deck == null ||deck.getCards().isEmpty()){
-            return null;
-        } else {
-            return deck.getRandomCard();
+    public String getStats(){
+        try {
+            Map<String,Integer> map = new HashMap<>();
+            map.put("Wins:",wins);
+            map.put("Games:",games);
+            return new ObjectMapper().writeValueAsString(map);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
         }
+        return null;
     }
 
-    public boolean createDeck(List<String> id){
-        if (id.size() != 4){
-            return false;
-        }
-        List<AbstractCard> newDeck = new ArrayList<>();
-        for (String value : id){
-            AbstractCard card = stack.getCard(value);
-            if (card != null){
-                newDeck.add(card);
-            } else {
-                for (AbstractCard tmp : newDeck){
-                    stack.AddCard(tmp);
-                }
+    public boolean buyPackage(){
+        try {
+            if (coins < 5){
                 return false;
             }
+            Connection conn = DatabaseService.getInstance().getConnection();
+            PreparedStatement ps = conn.prepareStatement("UPDATE users SET coins = ? WHERE username = ?;");
+            ps.setInt(1,coins-5);
+            ps.setString(2,username);
+            ps.executeUpdate();
+            ps.close();
+            conn.close();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-        this.deck = new Deck(newDeck);
-        return true;
+        return false;
     }
 
-    public boolean CreateRandomDeck(){
-        List<AbstractCard> newDeck = new ArrayList<>();
-        for (int i = 0; i < 4; i++){
-            AbstractCard card = stack.getRandomCard();
-            if (card != null) {
-                newDeck.add(card);
-            } else {
-                for (AbstractCard tmp : newDeck){
-                    stack.AddCard(tmp);
-                }
-                return false;
+    public boolean battleWon(){
+        wins++;
+        games++;
+        elo+=3;
+        return saveStats();
+    }
+    public boolean battleLost(){
+        games++;
+        elo-=5;
+        return saveStats();
+    }
+    public boolean battleDraw(){
+        games++;
+        return saveStats();
+    }
+    public boolean saveStats(){
+        try {
+            Connection conn = DatabaseService.getInstance().getConnection();
+            PreparedStatement ps = conn.prepareStatement("UPDATE users SET wins = ?, games = ?, elo = ? WHERE username = ?;");
+            ps.setInt(1,wins);
+            ps.setInt(2,games);
+            ps.setInt(3,elo);
+            ps.setString(4,username);
+            ps.executeUpdate();
+            ps.close();
+            conn.close();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    public boolean setUserInfo(String name, String bio, String image){
+        try {
+            Connection conn = DatabaseService.getInstance().getConnection();
+            PreparedStatement ps = conn.prepareStatement("UPDATE users SET name = ?, bio = ?, image = ? WHERE username = ?;");
+            ps.setString(1, name);
+            ps.setString(2, bio);
+            ps.setString(3, image);
+            ps.setString(4, username);
+            int affectedRows = ps.executeUpdate();
+            ps.close();
+            conn.close();
+            if (affectedRows == 1) {
+                return true;
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-        this.deck = new Deck(newDeck);
-        return true;
-    }
-
-    public void won(){
-        count_of_games++;
-        count_of_wins++;
-    }
-    public void lose(){
-        count_of_games++;
-    }
-
-    public void RemoveDeck(){
-        if (deck != null){
-            while(!deck.getCards().isEmpty()){
-                AbstractCard card = deck.getRandomCard();
-                stack.AddCard(card);
-                deck.RemoveCard(card);
-            }
-            deck = null;
-        }
-    }
-
-    public boolean checkPwd(String pwd){
-        return this.pwd.equals(pwd);
+        return false;
     }
 }
