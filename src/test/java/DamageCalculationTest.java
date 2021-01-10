@@ -19,7 +19,7 @@ public class DamageCalculationTest {
         CombatManager manager = CombatManager.getInstance();
         float result1 = manager.calculateDamage(card1,card2);
         float result2 = manager.calculateDamage(card2,card1);
-        assertEquals(12,result1);
+        assertEquals(15,result1);
         assertEquals(0,result2);
     }
 
