@@ -9,4 +9,5 @@ public enum CardType {
     Ork,
     Wizard,
     Spell,
+    magicdice,
 }

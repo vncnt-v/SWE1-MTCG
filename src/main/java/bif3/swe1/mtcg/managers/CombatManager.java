@@ -15,6 +15,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Random;
 
 public class CombatManager {
 
@@ -132,6 +133,12 @@ public class CombatManager {
     }
 
     public float calculateDamage(Card card1, Card card2){
+        if (card1.getCardType() == CardType.magicdice){
+            Random rand = new Random(6);
+            if (rand.nextInt() > 3){
+                return 999;
+            }
+        }
         if (card1.getCardType() != CardType.Spell){
             if (card2.getCardType() != CardType.Spell) {
                 switch (card1.getCardType()){

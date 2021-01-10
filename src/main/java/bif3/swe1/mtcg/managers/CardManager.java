@@ -185,6 +185,8 @@ public class CardManager {
             return CardType.Ork;
         } else if (name.toLowerCase().contains("wizard")){
             return CardType.Wizard;
+        } else if (name.toLowerCase().contains("magicdice")){
+            return CardType.magicdice;
         }
         return null;
     }
