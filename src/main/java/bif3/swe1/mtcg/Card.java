@@ -6,7 +6,7 @@ import bif3.swe1.mtcg.types.CardType;
 import lombok.Getter;
 
 
-public class Card implements CardInterface {
+public class Card {
 
     @Getter
     private String id;
