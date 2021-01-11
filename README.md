@@ -3,6 +3,12 @@
 ## `Git`
 https://github.com/vncnt-v/SWE1-MTCG.git
 
+## `Setup`
+* DatabaseServer anpassen der Einträge: DB_URL, USER, PASS
+* SQL Script in database.sql in einer PostgreSQL Database ausführen.
+* Projekt mit InteliJ öffnen und TCPListener runnen.
+* Server wartet auf Requests.
+
 ## `Designs`
 
 Die Architektur setzt sich Grundsätzlich aus 3 verschiedenen Bereichen zusammen, welche verschiedene Klassen beinhalten. (Packages sind mit Punkten dargestellt)
@@ -29,6 +35,8 @@ Die Architektur setzt sich Grundsätzlich aus 3 verschiedenen Bereichen zusammen
 * TradeManager
 * UserManager
 
+Aufbau als basic Diagramm in Structure.png
+
 ### `Server`
 
 #### `TcpListener`
@@ -50,7 +58,7 @@ Besitzt Variablen für die ausgehenden Http Response und setzt die ContentLength
 ### `Database`
 
 #### `DatabaseService`
-Beinhaltet alle Informationen für die Datenbank, stellt eine Verbindung her und stellt diese anfragenden Klassen zur verfügung.
+Beinhaltet alle Informationen für die Datenbank, stellt eine Verbindung her und stellt diese anfragenden Klassen zur Verfügung.
 
 ### `MTCG`
 
@@ -84,9 +92,15 @@ Der UserManager beinhaltet Funktionen für Registration, Login/Logout, Authentif
 
 ## `Integration Tests`
 
-Die Integration Tests wurden mittels Postman automatisiert getestet und bestehen aus einer Collection von 77 Einträgen. Beim automatisierten Testen wurde der StatusCode der Antwort mit des Erwarteten verglichen. 
+Die Integration Tests wurden mittels Postman automatisiert getestet und bestehen aus einer Collection von 78 Einträgen. Beim automatisierten Testen wurde der StatusCode der Antwort mit des Erwarteten verglichen. 
 Die Integration Tests sollten identisch zu denen der Angabe sein. Die Postman Collection und das Standard-Curl-File sind dem GitRepository beigefügt.
-Allerdings ist wurde der Curl "13) show configured deck different representation" nicht umgesetzt. Dies ist die einzige Abweichung zu den erwarteten Ergebnissen.
+Allerdings wurde der Curl "13) show configured deck different representation" nicht umgesetzt. Dies ist die einzige Abweichung zu den erwarteten Ergebnissen.
+
+Die Automatisierung läuft soweit bis manuel leider ein zweiter Request in Postman gestartet werden muss. Postman wartet in einer Collection immer auf den Response.
+
+In der Collection sind weitere Reqeust enthalten, welche evt Deaktiviert werden sollten beim automatisierten Testen.
+
+Hint: zweiten Battle Curl deaktivieren oder zwei mal einen manuellen Request für den jeweils anderen User senden.
 
 ## `Database`
 
@@ -97,29 +111,21 @@ Packages Tabelle mit den Infos der Cards eines Packages mit den Foreign Keys auf
 Marketplace Tabelle mit den Infos eines Trades sowie dem Foreign Key auf die CardID der Cards.
 
 SQL Statements zum Erstellen der Datenbank sind dem GitRepository beigefügt.
+database.sql
 
 
-## `Failures`
+## `Failures and Selected Solutions`
 
 Die zwei größten Fehlerquellen waren das fehlende Wissen über den Aufbau eines Rest Servers sowie nicht gezieltes Programmieren auf eine Implementierung einer Datenbankanbindung.
 
 Das Verständnis für die Struktur des Servers hat einige Zeit in Anspruch genommen und hat die meisten Fragen aufkommen lassen. Viele verschiedene Versuche haben schlussendlich zu einem funktionieren Ergebnis geführt. 
 
 Die erste Version des MTCG beinhaltete eine sehr starke Aufteilung verschiedener Komponenten in unterschiedliche Klassen. Als Beispiel die Klasse "Package" konnte in die Klasse "Stack" übergeben werden und alle Karten aus dem "Package" wurden in den "Stack" inkludiert. 
-Durch die persistente Speicherung in einer Datenbank wurde die alte Taktik, der Speicherung jedes Objektes zum Beispiel der Klasse "Package" in einer Datenstruktur wie z.B.: einer Liste überflüssig. Aus dem Grund habe ich mich entschieden die meisten SQL-Statements über Manager Klassen wie "CardManager", "UserManager", "TradeManager" abwickeln zu lassen.
+Durch die persistente Speicherung in einer Datenbank wurde die alte Taktik, der Speicherung jedes Objektes zum Beispiel der Klasse "Package" in einer Datenstruktur wie z.B.: einer Liste überflüssig. Aus dem Grund habe ich mich entschieden die meisten SQL-Statements über Manager Klassen wie "CardManager", "UserManager", "TradeManager", "CombatManager" abwickeln zu lassen.
 
 Der CombatManager wurde bis fast zum Schluss mit eine leere While Schleife gefangen um dem Thread zu halten. Dies wurde dann in ein synchronized Object geändert.
 
 Weiteres wurden alle Unity Tests mit der Umgestalltung auf die Datenbankanbindung obsolet und wurden leider erst am Ende des Projektes erneut umgesetzt.
-
-
-## `Selected Solutions`
-
-Die Abgabe besteht zum Schluss aus 3 Bereichen.
-Server: Kommunikation des Servers mit dem Clienten und den ManagerKlassen des mctg.
-Database: Stellt die Verbindung zur Datenbank her und stellt diese zur Verfügung.
-Mtcg: Die Game Logic welche auf eine Datenbank aufbaut. Dargestellt durch verschiedene Manager, welche verschiedene Kategorien der Abfrage abwickeln. Wie zum Beispiel der CardManager für die Erstellung, Registration und Verwaltung der Karten verantwortlich ist.
-Grundsätzlich bin ich zufrieden mit der Abgabe, an ein paar Stellen hätte ich gerne noch was geändert, besonders beim RepsonseHandler, ruft die entsprechenden Methoden des Mtcg Bereiches auf. Hier ist die Klasse 450 Zeilen lang. Das hätte ich gerne noch überarbeitet.
 
 
 ## `Unit Tests`
@@ -132,7 +138,7 @@ Die Funktionalität des Unwrappers wurde mit Tests überprüft. Ihm wurde ein vo
 
 Für den CombatManager wurden zwei User gemocked und überprüft ob Funktionen nach dem Battle am gemockten User aufgerufen werden.
 
-Der ResponseHandler wurde mithilfe von gemocketen Static Funktionen getestet. Hier wurde überprüft ob richtig Request die richtigen Funktionen in den jeweiligen Managern aufrufen.
+Der ResponseHandler wurde mithilfe von gemocketen Static Funktionen getestet. Hier wurde überprüft ob Request die richtigen Funktionen in den jeweiligen Managern aufrufen.
 
 Die Unit Tests wurden konfiguriert, dass sie automatisiert auf GitHub mit maven ausgeführt werden können.
 
